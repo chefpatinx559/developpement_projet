@@ -1,4 +1,5 @@
 <?php
+<<<<<<< HEAD
 //session_start();
 require "database/database.php";
 
@@ -87,6 +88,9 @@ $clients = $pdo->query("SELECT code_client, nom_prenom_client FROM clients ORDER
 $message = $_SESSION['message'] ?? '';
 $alert_type = str_contains($message, 'Erreur') ? 'danger' : 'success';
 if ($message) unset($_SESSION['message']);
+=======
+require "database/database.php";
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -105,11 +109,27 @@ if ($message) unset($_SESSION['message']);
         .expired { color: #dc3545; font-weight: 600; }
         .expiring { color: #ffc107; font-weight: 600; }
         .filter-card { background: #f8f9fa; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem; }
+
+        /* Style bouton Excel vert foncé */
+        .btn-excel {
+            background-color: #1D6F42;
+            border-color: #1D6F42;
+            color: white;
+        }
+        .btn-excel:hover {
+            background-color: #165a34;
+            border-color: #165a34;
+            color: white;
+        }
     </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
     <?php include 'config/dashboard.php'; ?>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
     <div class="content-wrapper">
         <section class="content-header">
             <div class="container-fluid">
@@ -129,23 +149,31 @@ if ($message) unset($_SESSION['message']);
         <section class="content">
             <div class="container-fluid">
                 <!-- Message Flash -->
-                <?php if ($message): ?>
+                <!-- <?php if ($message): ?>
                     <div class="alert alert-<?= $alert_type ?> alert-dismissible fade show">
                         <?= $message ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
-                <?php endif; ?>
+                <?php endif; ?> -->
 
                 <!-- FILTRE PAR CLIENT -->
+<<<<<<< HEAD
                 <div class="filter-card">
+=======
+                <div class="filter-card mb-4">
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                     <form method="GET" class="row g-3 align-items-end">
                         <div class="col-md-5">
                             <label class="form-label fw-bold">Filtrer par client</label>
                             <select name="client" class="form-select">
                                 <option value="">Tous les clients</option>
                                 <?php foreach ($clients as $c): ?>
+<<<<<<< HEAD
                                     <option value="<?= $c['code_client'] ?>"
                                         <?= ($client_filter === $c['code_client']) ? 'selected' : '' ?>>
+=======
+                                    <option value="<?= $c['code_client'] ?>" <?= ($client_filter === $c['code_client']) ? 'selected' : '' ?>>
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                                         <?= htmlspecialchars($c['nom_prenom_client']) ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -155,31 +183,59 @@ if ($message) unset($_SESSION['message']);
                             <button type="submit" class="btn btn-primary w-100">Filtrer</button>
                         </div>
                         <div class="col-md-3">
+<<<<<<< HEAD
                             <?php if ($client_filter): ?>
                                 <a href="crud_documents.php" class="btn btn-secondary w-100">Réinitialiser</a>
                             <?php else: ?>
                                 <button type="button" class="btn btn-secondary w-100" disabled>Réinitialiser</button>
                             <?php endif; ?>
+=======
+                            <a href="crud_documents.php" class="btn btn-secondary w-100">Réinitialiser</a>
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                         </div>
                     </form>
                 </div>
 
+                <!-- CARD PRINCIPALE -->
                 <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="card-header bg-dark text-white">
                         <h3 class="card-title">
                             Liste des documents
+<<<<<<< HEAD
                             <?php if ($client_filter): ?>
                                 <small class="text-muted">
                                     — Client :
                                     <?= htmlspecialchars(array_column($clients, 'nom_prenom_client', 'code_client')[$client_filter] ?? '') ?>
+=======
+                            <!-- <?php if ($client_filter): ?>
+                                <small class="text-muted">
+                                    — Client : <?= htmlspecialchars(array_column($clients, 'nom_prenom_client', 'code_client')[$client_filter] ?? '') ?>
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                                 </small>
-                            <?php endif; ?>
+                            <?php endif; ?> -->
                         </h3>
+<<<<<<< HEAD
                         <button class="btn btn-success" id="addBtn">Ajouter un document</button>
+=======
+
+                        <!-- BOUTONS EN HAUT À DROITE -->
+                        <div class="card-tools">
+                            <button type="button" class="btn btn-success btn-sm me-2" onclick="exportTableToCSV()">
+                                Exporter CSV
+                            </button>
+                            <button type="button" class="btn btn-excel btn-sm me-2" onclick="exportTableToExcel()">
+                                Exporter Excel
+                            </button>
+                            <button name="ajouter" class="btn btn-primary btn-sm" id="addBtn">
+                                Ajouter un document
+                            </button>
+                        </div>
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                     </div>
+
                     <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-striped table-hover">
+                            <table class="table table-striped table-hover" id="documentsTable">
                                 <thead class="table-dark">
                                     <tr>
                                         <th>Code</th>
@@ -193,7 +249,8 @@ if ($message) unset($_SESSION['message']);
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if ($documents): foreach ($documents as $d): ?>
+                                    <!-- Ton code PHP de boucle reste identique -->
+                                    <!-- <?php if ($documents): foreach ($documents as $d): ?>
                                         <?php
                                         $today = new DateTime();
                                         $exp = new DateTime($d['date_expiration_document']);
@@ -240,15 +297,8 @@ if ($message) unset($_SESSION['message']);
                                                 </a>
                                             </td>
                                         </tr>
-                                    <?php endforeach; else: ?>
-                                        <tr>
-                                            <td colspan="8" class="text-center text-muted py-4">
-                                                Aucun document trouvé.
-                                                <?php if ($client_filter): ?>
-                                                    <br><small>Cliquez sur "Réinitialiser" pour voir tous les clients.</small>
-                                                <?php endif; ?>
-                                            </td>
-                                        </tr>
+                                    <?php endforeach; else: ?> -->
+                                        <tr><td colspan="8" class="text-center py-4 text-muted">Aucun document trouvé.</td></tr>
                                     <?php endif; ?>
                                 </tbody>
                             </table>
@@ -258,6 +308,7 @@ if ($message) unset($_SESSION['message']);
             </div>
         </section>
     </div>
+<<<<<<< HEAD
     <footer class="main-footer">
         <strong>© 2025 <a href="#">Soutra+</a>.</strong> Tous droits réservés.
         <div class="float-right d-none d-sm-inline-block"><b>Version</b> 1.0</div>
@@ -327,13 +378,20 @@ if ($message) unset($_SESSION['message']);
     </div>
 </div>
 
+=======
+
+  
+
+<!-- MODAL (inchangé) -->
+<!-- ... (ton modal reste exactement le même) ... -->
+
+<!-- SCRIPTS -->
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
-<script>
-    const modal = new bootstrap.Modal('#docModal');
-    const form = document.getElementById('docForm');
 
+<<<<<<< HEAD
     // === AJOUTER UN DOCUMENT → CODE AUTO ===
     document.getElementById('addBtn').addEventListener('click', () => {
         form.reset();
@@ -361,6 +419,85 @@ if ($message) unset($_SESSION['message']);
             modal.show();
         });
     });
+=======
+<script>
+// === FONCTIONS D'EXPORT (100% sans librairie) ===
+function exportTableToCSV() {
+    const table = document.querySelector("#documentsTable");
+    const rows = table.querySelectorAll("tr");
+    let csv = [];
+
+    for (let i = 0; i < rows.length; i++) {
+        const row = [], cols = rows[i].querySelectorAll("td, th");
+        for (let j = 0; j < cols.length - 1; j++) { // -1 = ignore colonne Actions
+            let data = cols[j].innerText.trim().replace(/"/g, '""');
+            row.push('"' + data + '"');
+        }
+        if (row.length > 0) csv.push(row.join(";"));
+    }
+
+    const csvContent = "\uFEFF" + csv.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "documents_" + new Date().toLocaleDateString("fr-FR").replace(/\//g, "-") + ".csv";
+    link.click();
+}
+
+function exportTableToExcel() {
+    const table = document.querySelector("#documentsTable");
+    const rows = table.querySelectorAll("tr");
+
+    let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head><meta charset="utf-8"><style>td { mso-number-format:"\@"; }</style></head><body><table border="1">`;
+
+    for (let i = 0; i < rows.length; i++) {
+        const cols = rows[i].querySelectorAll("td, th");
+        html += "<tr>";
+        for (let j = 0; j < cols.length - 1; j++) {
+            let text = cols[j].innerText.trim().replace(/"/g, '""');
+            html += `<td>${text}</td>`;
+        }
+        html += "</tr>";
+    }
+    html += `</table></body></html>`;
+
+    const blob = new Blob(['\ufeff', html], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "documents_" + new Date().toLocaleDateString("fr-FR").replace(/\//g, "-") + ".xls";
+    link.click();
+}
+
+// === MODAL (inchangé) ===
+const modal = new bootstrap.Modal('#docModal');
+const form = document.getElementById('docForm');
+
+document.getElementById('addBtn').addEventListener('click', () => {
+    form.reset();
+    document.getElementById('modalTitle').innerText = 'Ajouter un document';
+    document.getElementById('formAction').value = 'add';
+    document.getElementById('code_document').readOnly = false;
+    modal.show();
+});
+
+document.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        document.getElementById('modalTitle').innerText = 'Modifier un document';
+        document.getElementById('formAction').value = 'update';
+        document.getElementById('code_document').value = this.dataset.bsCode;
+        document.getElementById('code_document').readOnly = true;
+        document.getElementById('titre_document').value = this.dataset.bsTitre;
+        document.getElementById('numero_document').value = this.dataset.bsNumero;
+        document.getElementById('date_delivrance_document').value = this.dataset.bsDelivrance;
+        document.getElementById('date_expiration_document').value = this.dataset.bsExpiration;
+        document.getElementById('observation_document').value = this.dataset.bsObs;
+        document.getElementById('etat_document').value = this.dataset.bsEtat;
+        document.getElementById('code_client').value = this.dataset.bsClient;
+        modal.show();
+    });
+});
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
 </script>
 </body>
 </html>

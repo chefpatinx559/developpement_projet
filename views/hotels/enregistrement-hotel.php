@@ -134,10 +134,17 @@ sort($villes_cote_divoire);
         <section class="content">
             <div class="container-fluid">
                 <?php if ($message): ?>
+<<<<<<< HEAD
                     <div class="alert alert-<?= $alert_type ?> alert-dismissible fade show">
                         <?= $message ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
+=======
+                        <!-- <div class="alert alert-<?= $alert_type ?> alert-dismissible fade show">
+                            <?= htmlspecialchars($message) ?>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div> -->
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                 <?php endif; ?>
 
                 <div class="card shadow-sm">
