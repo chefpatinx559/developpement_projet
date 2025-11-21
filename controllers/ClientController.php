@@ -9,7 +9,7 @@ class Clients
     {
         try {
             $this->pdo = new PDO(
-                'mysql:host=localhost;dbname=u738064605_soutra','root','',
+                'mysql:host=localhost;dbname=app_hotel','root','',
                 [
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
@@ -150,5 +150,17 @@ class Clients
         // === INCLURE LA VUE AVEC TOUTES LES VARIABLES ===
         include "views/clients/enregistrement-client.php";
     }
+
+
+    public function liste() {
+  
+
+    
+
+        include "views/clients/liste-client.php";
+    }
+
+
+
 }
 ?>

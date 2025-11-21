@@ -15,8 +15,7 @@ if (isset($_GET['delete'])) {
     } catch (Exception $e) {
         $_SESSION['message'] = "Erreur lors de la suppression : " . $e->getMessage();
     }
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit;
+   
 }
 
 // === AJOUT / MODIFICATION ===
@@ -62,8 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $_SESSION['message'] = "Erreur : " . $e->getMessage();
     }
-    header("Location: " . $_SERVER['PHP_SELF']);
-    exit;
+   
 }
 
 // === LISTE + DONNÉES POUR SELECT ===

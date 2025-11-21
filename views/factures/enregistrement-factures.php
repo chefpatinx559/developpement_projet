@@ -2,6 +2,16 @@
 //session_start();
 require "database/database.php";
 
+// ==================== FONCTION GÉNÉRATION CODE FACTURE ====================
+function genererCodeFacture($pdo) {
+    $count = $pdo->query("SELECT COUNT(*) FROM factures")->fetchColumn();
+    return 'FACT' . ($count + 1);
+}
+
+// RÉCUPÉRATION DE TOUS LES CLIENTS POUR LA LISTE DÉROULANTE
+$stmt_clients = $pdo->query("SELECT code_client, nom_prenom_client FROM clients ORDER BY nom_prenom_client");
+$clients = $stmt_clients->fetchAll(PDO::FETCH_ASSOC);
+
 // ==================== SUPPRESSION ====================
 if (isset($_GET['delete'])) {
     try {
@@ -11,8 +21,7 @@ if (isset($_GET['delete'])) {
     } catch (Exception $e) {
         $_SESSION['message'] = "Erreur lors de la suppression : " . $e->getMessage();
     }
-    header("Location: http://localhost/soutra/facture/enregistrement");
-    exit;
+   
 }
 
 // ==================== AJOUT / MODIFICATION ====================
@@ -28,6 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['print'])) {
     $etat_facture = $_POST['etat_facture'];
     $code_client = trim($_POST['code_client']);
 
+    // Génération automatique du code lors de l'ajout si vide
+    if ($action === 'add' && empty($code_facture)) {
+        $code_facture = genererCodeFacture($pdo);
+    }
+
     try {
         if ($action === 'add') {
             $sql = "INSERT INTO factures
@@ -35,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['print'])) {
                     VALUES (?,?,?,?,?,?,?,?,?)";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$code_facture, $titre_facture, $date_facture, $montant_ht, $montant_ttc, $taux_taxes, $type_taxes, $etat_facture, $code_client]);
-            $_SESSION['message'] = "Facture créée avec succès.";
+            $_SESSION['message'] = "Facture créée avec succès. Code généré : <strong>$code_facture</strong>";
         }
         if ($action === 'update') {
             $sql = "UPDATE factures SET
@@ -49,85 +63,110 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['print'])) {
     } catch (Exception $e) {
         $_SESSION['message'] = "Erreur : " . $e->getMessage();
     }
-    header("Location: http://localhost/soutra/facture/enregistrement");
-    exit;
+   
 }
-
-// ==================== GÉNÉRATION PDF (REÇU 80mm) ====================
+// ==================== GÉNÉRATION PDF (REÇU 80mm) - PARFAIT, COURT & ACCENTS 100% CORRIGÉS ====================
 if (isset($_GET['print'])) {
     $code = $_GET['print'];
-    $stmt = $pdo->prepare("SELECT * FROM factures WHERE code_facture = ?");
+
+    // Récupération facture + nom client
+    $stmt = $pdo->prepare("
+        SELECT f.*, c.nom_prenom_client 
+        FROM factures f
+        LEFT JOIN clients c ON f.code_client = c.code_client
+        WHERE f.code_facture = ?
+    ");
     $stmt->execute([$code]);
-    $f = $stmt->fetch();
+    $f = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$f) die("Facture non trouvée");
 
     require('libraries/fpdf/fpdf.php');
 
-    // Classe PDF personnalisée
+    // === FONCTION UTF-8 UNIVERSELLE (corrige TOUS les accents parfaitement) ===
+    function utf8($text) {
+        return iconv('UTF-8', 'windows-1252//TRANSLIT//IGNORE', $text);
+    }
+
     class PDF extends FPDF {
         function Header() {
-            $this->SetFont('Courier','B',12);
-            $this->Cell(0,6,'SOUTRA +',0,1,'C');
+            $this->SetFont('Courier','B',13);
+            $this->Cell(0,6,utf8('SOUTRA +'),0,1,'C');
             $this->SetFont('Courier','',8);
-            $this->Cell(0,4,'Hotel de luxe - Abidjan',0,1,'C');
-            $this->Cell(0,4,'Tel: +225 07 00 00 00 00',0,1,'C');
-            $this->Cell(0,4,'contact@soutraplus.com',0,1,'C');
+            $this->Cell(0,4,utf8('Hôtel de luxe - Côte d’Ivoire '),0,1,'C');
+            $this->Cell(0,4,utf8('Email : soutrapro531@gmail.com'),0,1,'C');
             $this->Ln(2);
-
-            // Ligne horizontale
-            $this->Line(5, $this->GetY(), 75, $this->GetY());
+            $this->SetLineWidth(0.5);
+            $this->Line(6, $this->GetY(), 74, $this->GetY());
             $this->Ln(3);
         }
 
         function Footer() {
-            $this->SetY(-15);
+            $this->SetY(-12);
             $this->SetFont('Courier','I',7);
-            $this->Cell(0,4,'Merci de votre visite !',0,0,'C');
+            $this->Cell(0,4,utf8('Merci de votre visite !'),0,0,'C');
+        }
+
+        // Cell avec UTF-8 automatique
+        function C($w, $h=0, $txt='', $border=0, $ln=0, $align='', $fill=false) {
+            $this->Cell($w, $h, utf8($txt), $border, $ln, $align, $fill);
         }
     }
 
-    // Format 80mm
-    $pdf = new PDF('P', 'mm', [80, 200]); // Largeur 80mm, hauteur max 200mm
-    $pdf->AddPage();
-    $pdf->SetAutoPageBreak(true, 10);
-    $pdf->SetMargins(5, 5, 5);
+    if (ob_get_length()) ob_clean();
 
-    // === EN-TÊTE REÇU ===
-    $pdf->SetFont('Courier','B',10);
-    $pdf->Cell(0,5,'RECU N: '.strtoupper($f['code_facture']),0,1,'C');
+    $pdf = new PDF('P', 'mm', [80, 140]); // Ultra court
+    $pdf->AddPage();
+    $pdf->SetMargins(6, 5, 6);
+    $pdf->SetAutoPageBreak(true, 10);
+
+    // N° Reçu + Impression temps réel
+    $pdf->SetFont('Courier','B',11);
+    $pdf->C(0,6,'REÇU N° '.strtoupper($f['code_facture']),0,1,'C');
     $pdf->SetFont('Courier','',8);
-    $pdf->Cell(0,4,'Date: '.date('d/m/Y H:i', strtotime($f['date_facture'])),0,1,'C');
-    $pdf->Cell(0,4,'Client: '.strtoupper($f['code_client']),0,1,'C');
+    $pdf->C(0,4,'Imprimé le '.date('d/m/Y à H:i'),0,1,'C');
+
+    // Client (nom complet avec accents)
+    $nom = $f['nom_prenom_client'] ?? $f['code_client'];
     $pdf->Ln(2);
-    $pdf->Line(5, $pdf->GetY(), 75, $pdf->GetY()); // CORRIGÉ : $pdf->GetY()
+    $pdf->SetFont('Courier','B',9);
+    $pdf->C(0,5,'Client :',0,1,'L');
+    $pdf->SetFont('Courier','',9);
+    $pdf->C(0,5,$nom,0,1,'L');
+
+    $pdf->Ln(2);
+    $pdf->SetLineWidth(0.4);
+    $pdf->Line(6, $pdf->GetY(), 74, $pdf->GetY());
     $pdf->Ln(3);
 
-    // === DÉTAIL ===
-    $pdf->SetFont('Courier','',9);
-    $pdf->Cell(50,5,'Prestation',0);
-    $pdf->Cell(20,5,number_format($f['montant_ht'],0,',',' ').' FCFA',0,1,'R');
+    // Désignation (tronquée proprement)
+    $titre = $f['titre_facture'] ?: 'Prestation';
+    $titre_court = mb_substr($titre, 0, 26, 'UTF-8');
+    if (mb_strlen($titre, 'UTF-8') > 26) $titre_court .= '...';
 
+    $pdf->SetFont('Courier','',9);
+    $pdf->C(48,5,$titre_court,0,0,'L');
+    $pdf->C(22,5,number_format($f['montant_ht'],0,',',' ').' FCFA',0,1,'R');
+
+    // TVA
     $taxe = $f['montant_ttc'] - $f['montant_ht'];
     $pdf->SetFont('Courier','',8);
-    $pdf->Cell(50,4,'TVA ('.$f['taux_taxes'].'% '.$f['type_taxes'].')',0);
-    $pdf->Cell(20,4,number_format($taxe,0,',',' ').' FCFA',0,1,'R');
+    $pdf->C(48,4,utf8($f['type_taxes'].' '.$f['taux_taxes'].'%'),0,0,'L');
+    $pdf->C(22,4,number_format($taxe,0,',',' ').' FCFA',0,1,'R');
 
+    // TOTAL
     $pdf->Ln(2);
-    $pdf->Line(5, $pdf->GetY(), 75, $pdf->GetY()); // CORRIGÉ
+    $pdf->SetLineWidth(0.7);
+    $pdf->Line(6, $pdf->GetY(), 74, $pdf->GetY());
     $pdf->Ln(3);
+    $pdf->SetFont('Courier','B',12);
+    $pdf->C(48,7,'TOTAL',0,0,'L');
+    $pdf->C(22,7,number_format($f['montant_ttc'],0,',',' ').' FCFA',0,1,'R');
 
-    // === TOTAL ===
-    $pdf->SetFont('Courier','B',11);
-    $pdf->Cell(50,6,'TOTAL',0);
-    $pdf->Cell(20,6,number_format($f['montant_ttc'],0,',',' ').' FCFA',0,1,'R');
-
+    // État
     $pdf->Ln(3);
-    $pdf->SetFont('Courier','',8);
-    $pdf->Cell(0,4,'Etat: '.strtoupper($f['etat_facture']),0,1,'C');
-
-    $pdf->Ln(5);
-    $pdf->SetFont('Courier','I',7);
-    $pdf->MultiCell(0,3,"Conditions: 30 jours nets\nPenalites: 1.5% / mois",0,'C');
+    $etat = mb_strtoupper($f['etat_facture'], 'UTF-8');
+    $pdf->SetFont('Courier','B',9);
+    $pdf->C(0,5,'État : '.$etat,0,1,'C');
 
     $pdf->Output('I', 'Recu_'.$f['code_facture'].'.pdf');
     exit;
@@ -141,13 +180,7 @@ $factures = $stmt->fetchAll();
 $message = $_SESSION['message'] ?? '';
 $alert_type = str_starts_with($message, 'Erreur') ? 'danger' : 'success';
 if ($message) unset($_SESSION['message']);
-
-// ==================== UTILISATEUR CONNECTÉ ====================
-$user_name = "Jean Dupont";
-$user_role = "Administrateur";
-$user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
 ?>
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -162,12 +195,12 @@ $user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
         .nav-sidebar .nav-link { border-radius: 0.25rem; }
         .nav-treeview .nav-link { padding-left: 2.5rem; }
         .badge { font-size: 0.85em; }
+        #montant_ttc { background-color: #f8f9fa; }
     </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
     <?php include 'config/dashboard.php'; ?>
-
     <div class="content-wrapper">
         <section class="content-header">
             <div class="container-fluid">
@@ -184,27 +217,25 @@ $user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
                 </div>
             </div>
         </section>
-
         <section class="content">
             <div class="container-fluid">
                 <?php if ($message): ?>
                     <div class="alert alert-<?= $alert_type ?> alert-dismissible fade show">
-                        <?= htmlspecialchars($message) ?>
+                        <?= $message ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
-
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <div>
                             <h3 class="card-title mb-0">
-                                Liste des factures 
+                                Liste des factures
                                 <span id="filter-info" class="badge bg-info ms-2" style="display:none;"></span>
                             </h3>
                         </div>
                         <div>
                             <button type="button" class="btn btn-outline-danger me-2" id="showUnpaid">
-                                Factures impayées 
+                                Factures impayées
                                 <span class="badge bg-danger" id="unpaidCount">0</span>
                             </button>
                             <button type="button" class="btn btn-secondary me-2" id="showAll">
@@ -215,7 +246,6 @@ $user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
                             </button>
                         </div>
                     </div>
-
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-striped table-hover">
@@ -232,7 +262,7 @@ $user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($factures as $f): 
+                                    <?php foreach ($factures as $f):
                                         $status = strtolower(trim($f['etat_facture']));
                                     ?>
                                     <tr data-status="<?= $status ?>">
@@ -288,14 +318,14 @@ $user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
                 <h5 class="modal-title" id="modalTitle">Ajouter une facture</h5>
                 <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
+            <div class COO="modal-body">
                 <form id="factureForm" method="post">
                     <input type="hidden" name="action" id="formAction" value="add">
                     <input type="hidden" name="old_code" id="old_code">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label>Code Facture <span class="text-danger">*</span></label>
-                            <input type="text" name="code_facture" id="code_facture" class="form-control" required>
+                            <label>Code Facture <span class="text-muted"></span></label>
+                            <input type="text" name="code_facture" id="code_facture" class="form-control" readonly placeholder="Ex: FACT88">
                         </div>
                         <div class="col-md-8">
                             <label>Titre facture</label>
@@ -310,8 +340,8 @@ $user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
                             <input type="number" step="0.01" name="montant_ht" id="montant_ht" class="form-control" required>
                         </div>
                         <div class="col-md-4">
-                            <label>Montant TTC</label>
-                            <input type="number" step="0.01" name="montant_ttc" id="montant_ttc" class="form-control" required>
+                            <label>Montant TTC <small class="text-muted"></small></label>
+                            <input type="number" step="0.01" name="montant_ttc" id="montant_ttc" class="form-control" required readonly>
                         </div>
                         <div class="col-md-3">
                             <label>Taux taxes (%)</label>
@@ -330,8 +360,15 @@ $user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label>Code Client</label>
-                            <input type="text" name="code_client" id="code_client" class="form-control" required>
+                            <label>Client <span class="text-danger">*</span></label>
+                            <select name="code_client" id="code_client" class="form-control" required>
+                                <option value="">-- Sélectionner un client --</option>
+                                <?php foreach ($clients as $c): ?>
+                                    <option value="<?= htmlspecialchars($c['code_client']) ?>">
+                                        <?= htmlspecialchars($c['code_client'] . ' - ' . $c['nom_prenom_client']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
                     <div class="mt-4 text-end">
@@ -346,30 +383,41 @@ $user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
-
 <script>
     const modal = new bootstrap.Modal('#factureModal');
 
-    // Compter les impayées au chargement
+    // === CALCUL AUTOMATIQUE DU TTC ===
+    function calculerTTC() {
+        const ht = parseFloat(document.getElementById('montant_ht').value) || 0;
+        const taux = parseFloat(document.getElementById('taux_taxes').value) || 0;
+        const ttc = ht * (1 + taux / 100);
+        document.getElementById('montant_ttc').value = ttc.toFixed(2);
+    }
+    document.getElementById('montant_ht').addEventListener('input', calculerTTC);
+    document.getElementById('taux_taxes').addEventListener('input', calculerTTC);
+    document.getElementById('factureModal').addEventListener('shown.bs.modal', calculerTTC);
+
     function updateUnpaidCount() {
         const count = document.querySelectorAll('tr[data-status="non payer"], tr[data-status="en attente"]').length;
         document.getElementById('unpaidCount').textContent = count;
     }
-
-    // Initialisation
     updateUnpaidCount();
 
-    // Bouton Ajouter
+    // === BOUTON AJOUTER UNE FACTURE → CODE AUTO ===
     document.getElementById('addBtn').addEventListener('click', () => {
         document.getElementById('factureForm').reset();
         document.getElementById('modalTitle').innerText = 'Ajouter une facture';
         document.getElementById('formAction').value = 'add';
-        document.getElementById('code_facture').readOnly = false;
+        document.getElementById('code_facture').readOnly = true;
+        document.getElementById('code_facture').value = '<?= genererCodeFacture($pdo) ?>';
         document.getElementById('date_facture').value = '<?= date('Y-m-d') ?>';
+        document.getElementById('taux_taxes').value = '18';
+        document.getElementById('type_taxes').value = 'TVA';
+        calculerTTC();
         modal.show();
     });
 
-    // Bouton Modifier
+    // === BOUTON MODIFIER ===
     document.querySelectorAll('.edit-btn').forEach(btn => {
         btn.addEventListener('click', function () {
             document.getElementById('modalTitle').innerText = 'Modifier une facture';
@@ -380,16 +428,16 @@ $user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
             document.getElementById('titre_facture').value = this.dataset.bsTitre;
             document.getElementById('date_facture').value = this.dataset.bsDate;
             document.getElementById('montant_ht').value = this.dataset.bsHt;
-            document.getElementById('montant_ttc').value = this.dataset.bsTtc;
             document.getElementById('taux_taxes').value = this.dataset.bsTaux;
             document.getElementById('type_taxes').value = this.dataset.bsType;
             document.getElementById('etat_facture').value = this.dataset.bsEtat;
             document.getElementById('code_client').value = this.dataset.bsClient;
+            calculerTTC();
             modal.show();
         });
     });
 
-    // Bouton : Afficher seulement les impayées
+    // Filtres impayées / toutes
     document.getElementById('showUnpaid').addEventListener('click', function() {
         document.querySelectorAll('tbody tr').forEach(row => {
             const status = row.dataset.status;
@@ -398,12 +446,8 @@ $user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
         document.getElementById('filter-info').textContent = 'Filtre : Factures impayées uniquement';
         document.getElementById('filter-info').style.display = 'inline';
     });
-
-    // Bouton : Afficher toutes les factures
     document.getElementById('showAll').addEventListener('click', function() {
-        document.querySelectorAll('tbody tr').forEach(row => {
-            row.style.display = '';
-        });
+        document.querySelectorAll('tbody tr').forEach(row => row.style.display = '');
         document.getElementById('filter-info').style.display = 'none';
     });
 </script>

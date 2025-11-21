@@ -6,6 +6,12 @@ function formatMoney($amount) {
     return number_format(floatval($amount ?? 0), 0, ',', ' ') . ' FCFA';
 }
 
+// === GÉNÉRATION AUTO DU NUMÉRO DE RÉSERVATION ===
+function genererNumeroReservation($pdo) {
+    $count = $pdo->query("SELECT COUNT(*) FROM reservations")->fetchColumn();
+    return 'RES' . ($count + 1);
+}
+
 // === SUPPRESSION ===
 if (isset($_GET['delete'])) {
     try {
@@ -15,30 +21,36 @@ if (isset($_GET['delete'])) {
     } catch (Exception $e) {
         $_SESSION['message'] = "Erreur : " . $e->getMessage();
     }
+   
 }
 
 // === AJOUT / MODIFICATION ===
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action         = $_POST['action'] ?? '';
-    $numero         = trim($_POST['numero_reservation'] ?? '');
-    $date_res       = $_POST['date_reservation'] ?? '';
-    $heure_res      = $_POST['heure_reservation'] ?? '';
-    $date_debut     = $_POST['date_debut'] ?? '';
-    $date_fin       = $_POST['date_fin'] ?? '';
-    $type_res       = trim($_POST['type_reservation'] ?? '');
-    $code_chambre   = $_POST['code_chambre'] ?? '';
-    $code_client    = $_POST['code_client'] ?? '';
-    $code_facture   = $_POST['code_facture'] ?? '';
-    $duree_jours    = (int)($_POST['duree_jours'] ?? 0);
-    $prix_chambre   = floatval($_POST['prix_chambre'] ?? 0);
-    $montant_res    = $duree_jours * $prix_chambre; // Calcul auto
-    $statut_res     = $_POST['statut_reservation'] ?? 'réservé';
-    $observation    = trim($_POST['observation_reservation'] ?? '');
-    $etat_res       = $_POST['etat_reservation'] ?? 'actif';
+    $action = $_POST['action'] ?? '';
+    $numero = trim($_POST['numero_reservation'] ?? '');
+    $date_res = $_POST['date_reservation'] ?? '';
+    $heure_res = $_POST['heure_reservation'] ?? '';
+    $date_debut = $_POST['date_debut'] ?? '';
+    $date_fin = $_POST['date_fin'] ?? '';
+    $type_res = trim($_POST['type_reservation'] ?? '');
+    $code_chambre = $_POST['code_chambre'] ?? '';
+    $code_client = $_POST['code_client'] ?? '';
+    $code_facture = $_POST['code_facture'] ?? '';
+    $duree_jours = (int)($_POST['duree_jours'] ?? 0);
+    $prix_chambre = floatval($_POST['prix_chambre'] ?? 0);
+    $montant_res = $duree_jours * $prix_chambre;
+    $statut_res = $_POST['statut_reservation'] ?? 'réservé';
+    $observation = trim($_POST['observation_reservation'] ?? '');
+    $etat_res = $_POST['etat_reservation'] ?? 'actif';
+
+    // Si ajout et numéro vide → générer automatiquement
+    if ($action === 'add' && empty($numero)) {
+        $numero = genererNumeroReservation($pdo);
+    }
 
     try {
         if ($action === 'add') {
-            $sql = "INSERT INTO reservations 
+            $sql = "INSERT INTO reservations
                     (numero_reservation, date_reservation, heure_reservation, date_debut, date_fin,
                      type_reservation, code_chambre, code_client, code_facture,
                      duree_jours, prix_chambre, montant_reservation, statut_reservation,
@@ -50,9 +62,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $duree_jours, $prix_chambre, $montant_res, $statut_res,
                 $observation, $etat_res
             ]);
-            $_SESSION['message'] = "Réservation ajoutée avec succès.";
+            $_SESSION['message'] = "Réservation ajoutée avec succès. Numéro : <strong>$numero</strong>";
         }
-
         if ($action === 'update') {
             $sql = "UPDATE reservations SET
                     date_reservation=?, heure_reservation=?, date_debut=?, date_fin=?,
@@ -75,6 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['message'] = "Erreur : " . $e->getMessage();
         }
     }
+   
 }
 
 // === CHARGEMENT DONNÉES ===
@@ -88,8 +100,7 @@ $reservations = $pdo->query("
     ORDER BY r.date_reservation DESC
 ")->fetchAll();
 
-$clients  = $pdo->query("SELECT code_client, nom_prenom_client FROM clients ORDER BY nom_prenom_client")->fetchAll();
-$chambres = $pdo->query("SELECT code_chambre, nom_chambre FROM chambres ORDER BY nom_chambre")->fetchAll();
+$clients = $pdo->query("SELECT code_client, nom_prenom_client FROM clients ORDER BY nom_prenom_client")->fetchAll();
 $factures = $pdo->query("SELECT code_facture, titre_facture FROM factures ORDER BY titre_facture")->fetchAll();
 
 $message = $_SESSION['message'] ?? '';
@@ -115,7 +126,6 @@ if ($message) unset($_SESSION['message']);
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
     <?php include 'config/dashboard.php'; ?>
-
     <div class="content-wrapper">
         <section class="content-header">
             <div class="container-fluid">
@@ -127,16 +137,14 @@ if ($message) unset($_SESSION['message']);
                 </div>
             </div>
         </section>
-
         <section class="content">
             <div class="container-fluid">
                 <?php if ($message): ?>
                     <div class="alert alert-<?= $alert_type ?> alert-dismissible fade show">
-                        <?= htmlspecialchars($message) ?>
+                        <?= $message ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
-
                 <div class="card shadow">
                     <div class="card-header bg-primary text-white">
                         <h3 class="card-title">Liste des réservations (<?= count($reservations) ?>)</h3>
@@ -185,15 +193,19 @@ if ($message) unset($_SESSION['message']);
                                                 data-bs-code_facture="<?= $r['code_facture'] ?>"
                                                 data-bs-duree="<?= $r['duree_jours'] ?>"
                                                 data-bs-prix="<?= $r['prix_chambre'] ?>"
-                                                data-bs-montant="<?= $r['montant_reservation'] ?>"
                                                 data-bs-statut="<?= $r['statut_reservation'] ?>"
                                                 data-bs-etat="<?= $r['etat_reservation'] ?>"
                                                 data-bs-obs="<?= htmlspecialchars($r['observation_reservation']) ?>">
                                                 Modifier
                                             </button>
-                                            <a href="?delete=<?= urlencode($r['numero_reservation']) ?>" 
-                                               class="btn btn-danger btn-sm" 
-                                               onclick="return confirm('Supprimer ?');">Supprimer</a>
+                                            <a href="?delete=<?= urlencode($r['numero_reservation']) ?>"
+                                               class="btn btn-danger btn-sm"
+                                               onclick="return confirm('Supprimer cette réservation ?');">Supprimer</a>
+
+
+                                               <a href="imprimer_recu_reservation?numero=<?= urlencode($r['numero_reservation']) ?>" class="btn btn-success btn-sm" target="_blank">
+                                                    Reçu
+                                                </a>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
@@ -219,13 +231,16 @@ if ($message) unset($_SESSION['message']);
                 <div class="modal-body">
                     <input type="hidden" name="action" id="formAction" value="add">
                     <div class="row g-3">
-                        <div class="col-md-4"><label>N° Réservation *</label><input type="text" name="numero_reservation" id="numero_reservation" class="form-control" required></div>
+                        <div class="col-md-4">
+                            <label>N° Réservation <span class="text-muted"></span></label>
+                            <input type="text" name="numero_reservation" id="numero_reservation" class="form-control" readonly placeholder="Ex: RES49">
+                        </div>
                         <div class="col-md-4"><label>Date réservation</label><input type="date" name="date_reservation" id="date_reservation" class="form-control" value="<?= date('Y-m-d') ?>" required></div>
                         <div class="col-md-4"><label>Heure</label><input type="time" name="heure_reservation" id="heure_reservation" class="form-control" value="<?= date('H:i') ?>" required></div>
-
+                       
                         <div class="col-md-6"><label>Date début *</label><input type="date" name="date_debut" id="date_debut" class="form-control" required></div>
                         <div class="col-md-6"><label>Date fin *</label><input type="date" name="date_fin" id="date_fin" class="form-control" required></div>
-
+                       
                         <div class="col-md-6"><label>Client *</label>
                             <select name="code_client" id="code_client" class="form-select" required>
                                 <option value="">-- Client --</option>
@@ -234,19 +249,22 @@ if ($message) unset($_SESSION['message']);
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                       
                         <div class="col-md-6"><label>Chambre *</label>
                             <select name="code_chambre" id="code_chambre" class="form-select" required>
-                                <option value="">-- Chambre --</option>
-                                <?php foreach ($chambres as $ch): ?>
-                                    <option value="<?= $ch['code_chambre'] ?>"><?= htmlspecialchars($ch['nom_chambre']) ?></option>
-                                <?php endforeach; ?>
+                                <option value="">-- Sélectionner une chambre --</option>
+                                <?php
+                                $stmt = $pdo->query("SELECT code_chambre, nom_chambre, prix_chambre FROM chambres ORDER BY nom_chambre");
+                                while ($ch = $stmt->fetch(PDO::FETCH_ASSOC)): ?>
+                                    <option value="<?= $ch['code_chambre'] ?>" data-prix="<?= $ch['prix_chambre'] ?>">
+                                        <?= htmlspecialchars($ch['nom_chambre']) ?> (<?= formatMoney($ch['prix_chambre']) ?>/jour)
+                                    </option>
+                                <?php endwhile; ?>
                             </select>
                         </div>
-
-                        <div class="col-md-4"><label>Prix journalier *</label><input type="number" step="1000" name="prix_chambre" id="prix_chambre" class="form-control" value="50000" required></div>
-                        <div class="col-md-4"><label>Durée (jours) *</label><input type="number" min="1" name="duree_jours" id="duree_jours" class="form-control" value="1" required></div>
+                        <div class="col-md-4"><label>Prix journalier</label><input type="number" step="1000" name="prix_chambre" id="prix_chambre" class="form-control" readonly></div>
+                        <div class="col-md-4"><label>Durée (jours)</label><input type="number" min="1" name="duree_jours" id="duree_jours" class="form-control bg-light" readonly></div>
                         <div class="col-md-4"><label>Montant total</label><input type="text" id="montant_reservation" class="form-control bg-light" readonly></div>
-
                         <div class="col-md-6"><label>Facture</label>
                             <select name="code_facture" id="code_facture" class="form-select">
                                 <option value="">Aucune</option>
@@ -256,7 +274,6 @@ if ($message) unset($_SESSION['message']);
                             </select>
                         </div>
                         <div class="col-md-6"><label>Type réservation</label><input type="text" name="type_reservation" id="type_reservation" class="form-control"></div>
-
                         <div class="col-md-6"><label>Statut</label>
                             <select name="statut_reservation" id="statut_reservation" class="form-select">
                                 <option value="réservé">Réservé</option>
@@ -285,33 +302,54 @@ if ($message) unset($_SESSION['message']);
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
-
 <script>
     const modal = new bootstrap.Modal('#reservationModal');
 
-    // Calcul auto du montant quand durée ou prix change
-    function calculerMontant() {
-        const prix = parseFloat(document.getElementById('prix_chambre').value) || 0;
-        const jours = parseInt(document.getElementById('duree_jours').value) || 0;
+    function updateCalculs() {
+        const debut = document.getElementById('date_debut').value;
+        const fin = document.getElementById('date_fin').value;
+        const prixInput = document.getElementById('prix_chambre');
+        const dureeInput = document.getElementById('duree_jours');
+        const montantInput = document.getElementById('montant_reservation');
+        let jours = 0;
+        if (debut && fin) {
+            const d1 = new Date(debut);
+            const d2 = new Date(fin);
+            jours = Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+            if (jours < 1) jours = 1;
+        }
+        dureeInput.value = jours;
+        const prix = parseFloat(prixInput.value) || 0;
         const total = prix * jours;
-        document.getElementById('montant_reservation').value = new Intl.NumberFormat('fr-FR').format(total) + ' FCFA';
+        montantInput.value = new Intl.NumberFormat('fr-FR').format(total) + ' FCFA';
     }
 
-    document.getElementById('prix_chambre').addEventListener('input', calculerMontant);
-    document.getElementById('duree_jours').addEventListener('input', calculerMontant);
+    document.getElementById('code_chambre').addEventListener('change', function() {
+        const selected = this.options[this.selectedIndex];
+        const prix = selected ? selected.dataset.prix : 0;
+        document.getElementById('prix_chambre').value = prix;
+        updateCalculs();
+    });
 
+    document.getElementById('date_debut').addEventListener('change', updateCalculs);
+    document.getElementById('date_fin').addEventListener('change', updateCalculs);
+
+    // Bouton Nouvelle réservation → génère le numéro auto
     document.getElementById('addBtn').onclick = () => {
         document.getElementById('reservationForm').reset();
         document.getElementById('modalTitle').textContent = 'Nouvelle réservation';
         document.getElementById('formAction').value = 'add';
-        document.getElementById('numero_reservation').readOnly = false;
+        document.getElementById('numero_reservation').readOnly = true;
+        document.getElementById('numero_reservation').value = '<?= genererNumeroReservation($pdo) ?>';
         document.getElementById('date_reservation').value = '<?= date('Y-m-d') ?>';
         document.getElementById('heure_reservation').value = '<?= date('H:i') ?>';
-        document.getElementById('duree_jours').value = 1;
-        calculerMontant();
+        document.getElementById('prix_chambre').value = '';
+        document.getElementById('duree_jours').value = '';
+        document.getElementById('montant_reservation').value = '';
         modal.show();
     };
 
+    // Bouton Modifier
     document.querySelectorAll('.edit-btn').forEach(btn => {
         btn.onclick = () => {
             document.getElementById('modalTitle').textContent = 'Modifier la réservation';
@@ -331,7 +369,7 @@ if ($message) unset($_SESSION['message']);
             document.getElementById('statut_reservation').value = btn.dataset.bsStatut;
             document.getElementById('etat_reservation').value = btn.dataset.bsEtat;
             document.getElementById('observation_reservation').value = btn.dataset.bsObs;
-            calculerMontant();
+            updateCalculs();
             modal.show();
         };
     });

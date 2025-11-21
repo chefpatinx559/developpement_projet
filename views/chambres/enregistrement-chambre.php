@@ -6,7 +6,6 @@ require "database/database.php";
 if (isset($_GET['delete'])) {
     $code = $_GET['delete'];
     try {
-        // Vérifier si la chambre est utilisée dans une réservation
         $check = $pdo->prepare("SELECT COUNT(*) FROM reservations WHERE code_chambre = ?");
         $check->execute([$code]);
         if ($check->fetchColumn() > 0) {
@@ -19,44 +18,65 @@ if (isset($_GET['delete'])) {
     } catch (Exception $e) {
         $_SESSION['message'] = "Erreur lors de la suppression : " . $e->getMessage();
     }
-
 }
 
 // ==================== AJOUT / MODIFICATION ====================
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
-    $code = trim($_POST['code_chambre']);
-    $nom = trim($_POST['nom_chambre']);
-    $type = $_POST['type_chambre'];
+    $code   = trim($_POST['code_chambre']);
+    $nom    = trim($_POST['nom_chambre']);
+    $type   = $_POST['type_chambre'];
     $description = $_POST['description_chambre'] ?? '';
-    $prix = trim($_POST['prix_chambre']);
-    $etat = trim($_POST['etat_chambre'] ?? 'disponible');
-    $hotel = trim($_POST['code_hotel']);
+    $prix   = trim($_POST['prix_chambre']);
+    $etat   = trim($_POST['etat_chambre'] ?? 'disponible');
+    $hotel  = trim($_POST['code_hotel']);
 
-    // Validation
+    // Génération automatique du code à l'ajout
+    if ($action === 'add' && empty($code) && !empty($nom)) {
+        // Extraire les 2 premières lettres du nom (sans espaces ni chiffres)
+        preg_match('/^[A-Za-z]*/', str_replace([' ', '-'], '', $nom), $letters);
+        $prefix = strtoupper(substr($letters[0], 0, 2));
+        if (strlen($prefix) < 2) $prefix = 'CH'; // sécurité
+
+        // Extraire le numéro (tout ce qui est numérique à la fin)
+        preg_match('/\d+$/', $nom, $num);
+        $number = $num[0] ?? mt_rand(100, 999);
+
+        $code = $prefix . $number;
+
+        // Garantir l'unicité
+        $i = 1;
+        $base = $code;
+        while (true) {
+            $check = $pdo->prepare("SELECT COUNT(*) FROM chambres WHERE code_chambre = ?");
+            $check->execute([$code]);
+            if ($check->fetchColumn() == 0) break;
+            $code = $prefix . ($number + $i++);
+            if ($i > 50) { $code = $base . $i; break; }
+        }
+    }
+
     if (empty($code) || empty($nom) || empty($type) || empty($prix) || empty($hotel)) {
         $_SESSION['message'] = "Erreur : Tous les champs obligatoires doivent être remplis.";
     } else {
         try {
             if ($action === 'add') {
-                // Vérifier doublon code_chambre (clé primaire)
                 $check = $pdo->prepare("SELECT COUNT(*) FROM chambres WHERE code_chambre = ?");
                 $check->execute([$code]);
                 if ($check->fetchColumn() > 0) {
                     $_SESSION['message'] = "Erreur : Ce code chambre existe déjà.";
                 } else {
-                    $sql = "INSERT INTO chambres 
+                    $sql = "INSERT INTO chambres
                             (code_chambre, nom_chambre, type_chambre, description_chambre, prix_chambre, etat_chambre, code_hotel)
                             VALUES (?,?,?,?,?,?,?)";
                     $stmt = $pdo->prepare($sql);
                     $stmt->execute([$code, $nom, $type, $description, $prix, $etat, $hotel]);
-                    $_SESSION['message'] = "Chambre ajoutée avec succès.";
+                    $_SESSION['message'] = "Chambre ajoutée avec succès. Code généré : <strong>$code</strong>";
                 }
             }
-
             if ($action === 'update') {
-                $sql = "UPDATE chambres SET 
-                        nom_chambre = ?, type_chambre = ?, description_chambre = ?, 
+                $sql = "UPDATE chambres SET
+                        nom_chambre = ?, type_chambre = ?, description_chambre = ?,
                         prix_chambre = ?, etat_chambre = ?, code_hotel = ?
                         WHERE code_chambre = ?";
                 $stmt = $pdo->prepare($sql);
@@ -67,27 +87,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['message'] = "Erreur : " . $e->getMessage();
         }
     }
+   
 }
 
 // ==================== LISTE ====================
 $stmt = $pdo->query("
-    SELECT c.*, h.nom_hotel 
-    FROM chambres c 
-    LEFT JOIN hotels h ON c.code_hotel = h.code_hotel 
+    SELECT c.*, h.nom_hotel
+    FROM chambres c
+    LEFT JOIN hotels h ON c.code_hotel = h.code_hotel
     ORDER BY h.nom_hotel, c.nom_chambre
 ");
 $chambres = $stmt->fetchAll();
-
 $hotels = $pdo->query("SELECT code_hotel, nom_hotel FROM hotels ORDER BY nom_hotel")->fetchAll();
 
 // Message
 $message = $_SESSION['message'] ?? '';
 $alert_type = str_starts_with($message, 'Erreur') ? 'danger' : 'success';
 if ($message) unset($_SESSION['message']);
-
-$user_name = "Jean Dupont";
-$user_role = "Administrateur";
-$user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
 ?>
 
 <!DOCTYPE html>
@@ -109,7 +125,6 @@ $user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
     <?php include 'config/dashboard.php'; ?>
-
     <div class="content-wrapper">
         <section class="content-header">
             <div class="container-fluid">
@@ -124,12 +139,11 @@ $user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
                 </div>
             </div>
         </section>
-
         <section class="content">
             <div class="container-fluid">
                 <?php if ($message): ?>
                     <div class="alert alert-<?= $alert_type ?> alert-dismissible fade show">
-                        <?= htmlspecialchars($message) ?>
+                        <?= $message ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
@@ -157,58 +171,44 @@ $user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
                                 </thead>
                                 <tbody>
                                     <?php if (empty($chambres)): ?>
+                                        <tr><td colspan="7" class="text-center text-muted py-4">Aucune chambre enregistrée.</td></tr>
+                                    <?php else: foreach ($chambres as $c): ?>
                                         <tr>
-                                            <td colspan="7" class="text-center text-muted py-4">
-                                                Aucune chambre enregistrée.
+                                            <td><strong><?= htmlspecialchars($c['code_chambre']) ?></strong></td>
+                                            <td><?= htmlspecialchars($c['nom_chambre']) ?></td>
+                                            <td><span class="badge bg-info text-dark"><?= ucwords(str_replace('chambre ', '', $c['type_chambre'])) ?></span></td>
+                                            <td><strong><?= number_format($c['prix_chambre']) ?> FCFA</strong></td>
+                                            <td><?= htmlspecialchars($c['nom_hotel'] ?? '<em class="text-muted">Non assigné</em>') ?></td>
+                                            <td>
+                                                <?php
+                                                $etat = $c['etat_chambre'];
+                                                $badge = match($etat) {
+                                                    'disponible' => 'success', 'occupée' => 'danger',
+                                                    'réservée' => 'warning', 'maintenance' => 'secondary',
+                                                    default => 'dark'
+                                                };
+                                                ?>
+                                                <span class="badge bg-<?= $badge ?>"><?= ucfirst($etat) ?></span>
+                                            </td>
+                                            <td class="text-center">
+                                                <button class="btn btn-warning btn-sm edit-btn"
+                                                    data-code="<?= htmlspecialchars($c['code_chambre']) ?>"
+                                                    data-nom="<?= htmlspecialchars($c['nom_chambre']) ?>"
+                                                    data-type="<?= htmlspecialchars($c['type_chambre']) ?>"
+                                                    data-desc="<?= htmlspecialchars($c['description_chambre'] ?? '') ?>"
+                                                    data-prix="<?= htmlspecialchars($c['prix_chambre']) ?>"
+                                                    data-etat="<?= htmlspecialchars($c['etat_chambre']) ?>"
+                                                    data-hotel="<?= htmlspecialchars($c['code_hotel']) ?>">
+                                                    Modifier
+                                                </button>
+                                                <a href="?delete=<?= urlencode($c['code_chambre']) ?>" 
+                                                   onclick="return confirm('Supprimer cette chambre ?');"
+                                                   class="btn btn-danger btn-sm">
+                                                    Supprimer
+                                                </a>
                                             </td>
                                         </tr>
-                                    <?php else: ?>
-                                        <?php foreach ($chambres as $c): ?>
-                                            <tr>
-                                                <td><strong><?= htmlspecialchars($c['code_chambre']) ?></strong></td>
-                                                <td><?= htmlspecialchars($c['nom_chambre']) ?></td>
-                                                <td>
-                                                    <span class="badge bg-info text-dark">
-                                                        <?= ucwords(str_replace('chambre ', '', $c['type_chambre'])) ?>
-                                                    </span>
-                                                </td>
-                                                <td><strong><?= htmlspecialchars($c['prix_chambre']) ?> FCFA</strong></td>
-                                                <td><?= htmlspecialchars($c['nom_hotel'] ?? '<em class="text-muted">Non assigné</em>') ?></td>
-                                                <td>
-                                                    <?php
-                                                    $etat = $c['etat_chambre'];
-                                                    $badge = match($etat) {
-                                                        'disponible' => 'success',
-                                                        'occupée' => 'danger',
-                                                        'réservée' => 'warning',
-                                                        'maintenance' => 'secondary',
-                                                        default => 'dark'
-                                                    };
-                                                    ?>
-                                                    <span class="badge bg-<?= $badge ?>">
-                                                        <?= ucfirst($etat) ?>
-                                                    </span>
-                                                </td>
-                                                <td class="text-center">
-                                                    <button class="btn btn-warning btn-sm edit-btn"
-                                                        data-code="<?= htmlspecialchars($c['code_chambre']) ?>"
-                                                        data-nom="<?= htmlspecialchars($c['nom_chambre']) ?>"
-                                                        data-type="<?= htmlspecialchars($c['type_chambre']) ?>"
-                                                        data-desc="<?= htmlspecialchars($c['description_chambre'] ?? '') ?>"
-                                                        data-prix="<?= htmlspecialchars($c['prix_chambre']) ?>"
-                                                        data-etat="<?= htmlspecialchars($c['etat_chambre']) ?>"
-                                                        data-hotel="<?= htmlspecialchars($c['code_hotel']) ?>">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                    <a href="?delete=<?= urlencode($c['code_chambre']) ?>" onclick="return confirm('Supprimer cette chambre ?');"
-                                                       class="btn btn-danger btn-sm"
-                                                      ">
-                                                        <i class="fas fa-trash"></i>
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
+                                    <?php endforeach; endif; ?>
                                 </tbody>
                             </table>
                         </div>
@@ -218,90 +218,107 @@ $user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
         </section>
     </div>
 
+    <!-- ==================== MODAL CHAMBRE ==================== -->
+    <div class="modal fade" id="chambreModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalTitle">Ajouter une chambre</h5>
+                    <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="chambreForm" method="post">
+                        <input type="hidden" name="action" id="formAction" value="add">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Code chambre <span class="text-muted"></span></label>
+                                <input type="text" name="code_chambre" id="code_chambre" class="form-control" readonly >
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nom chambre <span class="text-danger">*</span></label>
+                                <input type="text" name="nom_chambre" id="nom_chambre" class="form-control" 
+                                       placeholder="Ex: Chambre 101, Suite 305, VIP 12" required onkeyup="generateCodeFromName()">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Type chambre <span class="text-danger">*</span></label>
+                                <select name="type_chambre" id="type_chambre" class="form-select" required>
+                                    <option value="chambre simple">Chambre Simple</option>
+                                    <option value="chambre double">Chambre Double</option>
+                                    <option value="chambre vip">Chambre VIP</option>
+                                    <option value="chambre suite">Chambre Suite</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Prix (FCFA) <span class="text-danger">*</span></label>
+                                <input type="text" name="prix_chambre" id="prix_chambre" class="form-control" placeholder="25000" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">État</label>
+                                <select name="etat_chambre" id="etat_chambre" class="form-select">
+                                    <option value="disponible">Disponible</option>
+                                    <option value="occupée">Occupée</option>
+                                    <option value="réservée">Réservée</option>
+                                    <option value="maintenance">En maintenance</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Hôtel <span class="text-danger">*</span></label>
+                                <select name="code_hotel" id="code_hotel" class="form-select" required>
+                                    <option value="">-- Sélectionner un hôtel --</option>
+                                    <?php foreach ($hotels as $h): ?>
+                                        <option value="<?= $h['code_hotel'] ?>"><?= htmlspecialchars($h['nom_hotel']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Description</label>
+                                <textarea name="description_chambre" id="description_chambre" class="form-control" rows="4"></textarea>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-end">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                            <button type="submit" class="btn btn-success">Sauvegarder</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <footer class="main-footer">
         <strong>© 2025 <a href="#">Soutra+</a>.</strong> Tous droits réservés.
         <div class="float-right d-none d-sm-inline-block"><b>Version</b> 1.0</div>
     </footer>
 </div>
 
-<!-- ==================== MODAL CHAMBRE ==================== -->
-<div class="modal fade" id="chambreModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modalTitle">Ajouter une chambre</h5>
-                <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <form id="chambreForm" method="post">
-                    <input type="hidden" name="action" id="formAction" value="add">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Code chambre <span class="text-danger">*</span></label>
-                            <input type="text" name="code_chambre" id="code_chambre" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Nom chambre <span class="text-danger">*</span></label>
-                            <input type="text" name="nom_chambre" id="nom_chambre" class="form-control" placeholder="Ex: Chambre 101" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Type chambre <span class="text-danger">*</span></label>
-                            <select name="type_chambre" id="type_chambre" class="form-select" required>
-                                <option value="chambre simple">Chambre Simple</option>
-                                <option value="chambre double">Chambre Double</option>
-                                <option value="chambre vip">Chambre VIP</option>
-                                <option value="chambre suite">Chambre Suite</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Prix (FCFA) <span class="text-danger">*</span></label>
-                            <input type="text" name="prix_chambre" id="prix_chambre" class="form-control" placeholder="25000" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">État</label>
-                            <select name="etat_chambre" id="etat_chambre" class="form-select">
-                                <option value="disponible">Disponible</option>
-                                <option value="occupée">Occupée</option>
-                                <option value="réservée">Réservée</option>
-                                <option value="maintenance">En maintenance</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Hôtel <span class="text-danger">*</span></label>
-                            <select name="code_hotel" id="code_hotel" class="form-select" required>
-                                <option value="">-- Sélectionner un hôtel --</option>
-                                <?php foreach ($hotels as $h): ?>
-                                    <option value="<?= $h['code_hotel'] ?>"><?= htmlspecialchars($h['nom_hotel']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Description</label>
-                            <textarea name="description_chambre" id="description_chambre" class="form-control" rows="4"></textarea>
-                        </div>
-                    </div>
-                    <div class="mt-4 text-end">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-success">Sauvegarder</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
-
 <script>
-    const modal = new bootstrap.Modal('#chambreModal');
+    function generateCodeFromName() {
+        const nom = document.getElementById('nom_chambre').value.trim();
+        if (!nom) {
+            document.getElementById('code_chambre').value = '';
+            return;
+        }
+        // 2 premières lettres (sans espaces)
+        let prefix = nom.replace(/[^A-Za-z]/g, '').substring(0, 2).toUpperCase();
+        if (prefix.length < 2) prefix = 'CH';
 
+        // Extraire le numéro à la fin
+        const numMatch = nom.match(/\d+$/);
+        const number = numMatch ? numMatch[0] : '';
+
+        document.getElementById('code_chambre').value = prefix + number;
+    }
+
+    const modal = new bootstrap.Modal('#chambreModal');
     document.getElementById('addBtn').addEventListener('click', () => {
         document.getElementById('chambreForm').reset();
         document.getElementById('modalTitle').innerText = 'Ajouter une chambre';
         document.getElementById('formAction').value = 'add';
-        document.getElementById('code_chambre').readOnly = false;
+        document.getElementById('code_chambre').value = '';
+        generateCodeFromName();
         modal.show();
     });
 

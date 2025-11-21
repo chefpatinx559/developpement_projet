@@ -1,5 +1,96 @@
 <?php
+<<<<<<< HEAD
+//session_start();
 require "database/database.php";
+
+// ==================== FONCTION GÉNÉRATION CODE DOCUMENT ====================
+function genererCodeDocument($pdo) {
+    $count = $pdo->query("SELECT COUNT(*) FROM documents")->fetchColumn();
+    return 'DOC' . ($count + 1);
+}
+
+// ==================== SUPPRESSION ====================
+if (isset($_GET['delete'])) {
+    try {
+        $stmt = $pdo->prepare("DELETE FROM documents WHERE code_document = ?");
+        $stmt->execute([$_GET['delete']]);
+        $_SESSION['message'] = "Document supprimé avec succès.";
+    } catch (Exception $e) {
+        $_SESSION['message'] = "Erreur : " . $e->getMessage();
+    }
+}
+
+// ==================== AJOUT / MODIFICATION ====================
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    $code_doc = trim($_POST['code_document']);
+    $titre = trim($_POST['titre_document']);
+    $numero = trim($_POST['numero_document']);
+    $date_delivrance = $_POST['date_delivrance_document'];
+    $date_expiration = $_POST['date_expiration_document'];
+    $observation = $_POST['observation_document'];
+    $etat = trim($_POST['etat_document']);
+    $code_client = trim($_POST['code_client']);
+
+    // Génération automatique du code lors de l'ajout si vide
+    if ($action === 'add' && empty($code_doc)) {
+        $code_doc = genererCodeDocument($pdo);
+    }
+
+    try {
+        if ($action === 'add') {
+            $sql = "INSERT INTO documents
+                    (code_document, titre_document, numero_document, date_delivrance_document,
+                     date_expiration_document, observation_document, etat_document, code_client)
+                    VALUES (?,?,?,?,?,?,?,?)";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$code_doc, $titre, $numero, $date_delivrance, $date_expiration, $observation, $etat, $code_client]);
+            $_SESSION['message'] = "Document ajouté avec succès. Code généré : <strong>$code_doc</strong>";
+        }
+        if ($action === 'update') {
+            $sql = "UPDATE documents SET
+                    titre_document = ?, numero_document = ?, date_delivrance_document = ?,
+                    date_expiration_document = ?, observation_document = ?, etat_document = ?, code_client = ?
+                    WHERE code_document = ?";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute([$titre, $numero, $date_delivrance, $date_expiration, $observation, $etat, $code_client, $code_doc]);
+            $_SESSION['message'] = "Document modifié avec succès.";
+        }
+    } catch (Exception $e) {
+        $_SESSION['message'] = "Erreur : " . $e->getMessage();
+    }
+    $redirect = "crud_documents.php";
+    if (isset($_GET['client'])) $redirect .= "?client=" . urlencode($_GET['client']);
+   
+}
+
+// ==================== FILTRE PAR CLIENT ====================
+$client_filter = $_GET['client'] ?? '';
+$where = $client_filter ? "WHERE d.code_client = ?" : "";
+$params = $client_filter ? [$client_filter] : [];
+
+// ==================== LISTE DOCUMENTS + CLIENTS ====================
+$sql = "
+    SELECT d.*, c.nom_prenom_client
+    FROM documents d
+    LEFT JOIN clients c ON d.code_client = c.code_client
+    $where
+    ORDER BY c.nom_prenom_client, d.date_delivrance_document DESC
+";
+$stmt = $pdo->prepare($sql);
+$stmt->execute($params);
+$documents = $stmt->fetchAll();
+
+// Liste des clients pour le select
+$clients = $pdo->query("SELECT code_client, nom_prenom_client FROM clients ORDER BY nom_prenom_client")->fetchAll();
+
+// ==================== MESSAGE FLASH ====================
+$message = $_SESSION['message'] ?? '';
+$alert_type = str_contains($message, 'Erreur') ? 'danger' : 'success';
+if ($message) unset($_SESSION['message']);
+=======
+require "database/database.php";
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -35,7 +126,10 @@ require "database/database.php";
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
     <?php include 'config/dashboard.php'; ?>
+<<<<<<< HEAD
+=======
 
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
     <div class="content-wrapper">
         <section class="content-header">
             <div class="container-fluid">
@@ -52,27 +146,34 @@ require "database/database.php";
                 </div>
             </div>
         </section>
-
         <section class="content">
             <div class="container-fluid">
-
                 <!-- Message Flash -->
                 <!-- <?php if ($message): ?>
                     <div class="alert alert-<?= $alert_type ?> alert-dismissible fade show">
-                        <?= htmlspecialchars($message) ?>
+                        <?= $message ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?> -->
 
                 <!-- FILTRE PAR CLIENT -->
+<<<<<<< HEAD
+                <div class="filter-card">
+=======
                 <div class="filter-card mb-4">
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                     <form method="GET" class="row g-3 align-items-end">
                         <div class="col-md-5">
                             <label class="form-label fw-bold">Filtrer par client</label>
                             <select name="client" class="form-select">
                                 <option value="">Tous les clients</option>
                                 <?php foreach ($clients as $c): ?>
+<<<<<<< HEAD
+                                    <option value="<?= $c['code_client'] ?>"
+                                        <?= ($client_filter === $c['code_client']) ? 'selected' : '' ?>>
+=======
                                     <option value="<?= $c['code_client'] ?>" <?= ($client_filter === $c['code_client']) ? 'selected' : '' ?>>
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                                         <?= htmlspecialchars($c['nom_prenom_client']) ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -82,7 +183,15 @@ require "database/database.php";
                             <button type="submit" class="btn btn-primary w-100">Filtrer</button>
                         </div>
                         <div class="col-md-3">
+<<<<<<< HEAD
+                            <?php if ($client_filter): ?>
+                                <a href="crud_documents.php" class="btn btn-secondary w-100">Réinitialiser</a>
+                            <?php else: ?>
+                                <button type="button" class="btn btn-secondary w-100" disabled>Réinitialiser</button>
+                            <?php endif; ?>
+=======
                             <a href="crud_documents.php" class="btn btn-secondary w-100">Réinitialiser</a>
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                         </div>
                     </form>
                 </div>
@@ -92,12 +201,22 @@ require "database/database.php";
                     <div class="card-header bg-dark text-white">
                         <h3 class="card-title">
                             Liste des documents
+<<<<<<< HEAD
+                            <?php if ($client_filter): ?>
+                                <small class="text-muted">
+                                    — Client :
+                                    <?= htmlspecialchars(array_column($clients, 'nom_prenom_client', 'code_client')[$client_filter] ?? '') ?>
+=======
                             <!-- <?php if ($client_filter): ?>
                                 <small class="text-muted">
                                     — Client : <?= htmlspecialchars(array_column($clients, 'nom_prenom_client', 'code_client')[$client_filter] ?? '') ?>
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                                 </small>
                             <?php endif; ?> -->
                         </h3>
+<<<<<<< HEAD
+                        <button class="btn btn-success" id="addBtn">Ajouter un document</button>
+=======
 
                         <!-- BOUTONS EN HAUT À DROITE -->
                         <div class="card-tools">
@@ -111,6 +230,7 @@ require "database/database.php";
                                 Ajouter un document
                             </button>
                         </div>
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                     </div>
 
                     <div class="card-body">
@@ -151,8 +271,8 @@ require "database/database.php";
                                                 <?php endif; ?>
                                             </td>
                                             <td>
-                                                <span class="badge bg-<?= 
-                                                    $d['etat_document'] === 'valide' ? 'success' : 
+                                                <span class="badge bg-<?=
+                                                    $d['etat_document'] === 'valide' ? 'success' :
                                                     ($d['etat_document'] === 'expiré' ? 'danger' : 'warning')
                                                 ?>">
                                                     <?= ucfirst($d['etat_document']) ?>
@@ -188,6 +308,77 @@ require "database/database.php";
             </div>
         </section>
     </div>
+<<<<<<< HEAD
+    <footer class="main-footer">
+        <strong>© 2025 <a href="#">Soutra+</a>.</strong> Tous droits réservés.
+        <div class="float-right d-none d-sm-inline-block"><b>Version</b> 1.0</div>
+    </footer>
+</div>
+
+<!-- ==================== MODAL DOCUMENT ==================== -->
+<div class="modal fade" id="docModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalTitle">Ajouter un document</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="docForm" method="post">
+                    <input type="hidden" name="action" id="formAction" value="add">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Code document <span class="text-muted">(auto-généré)</span></label>
+                            <input type="text" name="code_document" id="code_document" class="form-control" readonly placeholder="Ex: DOC46">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Titre document <span class="text-danger">*</span></label>
+                            <input type="text" name="titre_document" id="titre_document" class="form-control" placeholder="Ex: Passeport, CNI" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Numéro document <span class="text-danger">*</span></label>
+                            <input type="text" name="numero_document" id="numero_document" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Client <span class="text-danger">*</span></label>
+                            <select name="code_client" id="code_client" class="form-select" required>
+                                <option value="">-- Sélectionner un client --</option>
+                                <?php foreach ($clients as $c): ?>
+                                    <option value="<?= $c['code_client'] ?>"><?= htmlspecialchars($c['nom_prenom_client']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Date délivrance <span class="text-danger">*</span></label>
+                            <input type="date" name="date_delivrance_document" id="date_delivrance_document" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Date expiration <span class="text-danger">*</span></label>
+                            <input type="date" name="date_expiration_document" id="date_expiration_document" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">État <span class="text-danger">*</span></label>
+                            <select name="etat_document" id="etat_document" class="form-select" required>
+                                <option value="valide">Valide</option>
+                                <option value="expiré">Expiré</option>
+                                <option value="en attente">En attente</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Observation</label>
+                            <textarea name="observation_document" id="observation_document" class="form-control" rows="3" placeholder="Remarques..."></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-end">
+                        <button type="submit" class="btn btn-success px-4">Sauvegarder</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+=======
 
   
 
@@ -195,10 +386,40 @@ require "database/database.php";
 <!-- ... (ton modal reste exactement le même) ... -->
 
 <!-- SCRIPTS -->
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 
+<<<<<<< HEAD
+    // === AJOUTER UN DOCUMENT → CODE AUTO ===
+    document.getElementById('addBtn').addEventListener('click', () => {
+        form.reset();
+        document.getElementById('modalTitle').innerText = 'Ajouter un document';
+        document.getElementById('formAction').value = 'add';
+        document.getElementById('code_document').readOnly = true;
+        document.getElementById('code_document').value = '<?= genererCodeDocument($pdo) ?>';
+        modal.show();
+    });
+
+    // === MODIFIER UN DOCUMENT ===
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.getElementById('modalTitle').innerText = 'Modifier un document';
+            document.getElementById('formAction').value = 'update';
+            document.getElementById('code_document').value = this.dataset.bsCode;
+            document.getElementById('code_document').readOnly = true;
+            document.getElementById('titre_document').value = this.dataset.bsTitre;
+            document.getElementById('numero_document').value = this.dataset.bsNumero;
+            document.getElementById('date_delivrance_document').value = this.dataset.bsDelivrance;
+            document.getElementById('date_expiration_document').value = this.dataset.bsExpiration;
+            document.getElementById('observation_document').value = this.dataset.bsObs;
+            document.getElementById('etat_document').value = this.dataset.bsEtat;
+            document.getElementById('code_client').value = this.dataset.bsClient;
+            modal.show();
+        });
+    });
+=======
 <script>
 // === FONCTIONS D'EXPORT (100% sans librairie) ===
 function exportTableToCSV() {
@@ -276,6 +497,7 @@ document.querySelectorAll('.edit-btn').forEach(btn => {
         modal.show();
     });
 });
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
 </script>
 </body>
 </html>

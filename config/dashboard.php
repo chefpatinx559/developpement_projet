@@ -1,47 +1,90 @@
-<style>
-    .user-menu .dropdown-menu {
-    z-index: 1070;
+<?php
+// config/dashboard.php
+$user_name = "Jean Dupont";
+$user_role = "Administrateur";
+$user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
+
+function old_url($path = '') {
+    $base = (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] !== 'off' ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . rtrim(dirname($_SERVER["PHP_SELF"]), '/');
+    return $base . $path;
 }
-</style>
-<!-- ==================== NAVBAR ==================== -->
-<nav class="main-header navbar navbar-expand navbar-white navbar-light">
+?>
+
+<!-- ==================== NAVBAR (inchangée - déjà parfaite) ==================== -->
+<nav class="main-header navbar navbar-expand navbar-white navbar-light border-bottom-0 shadow-sm">
     <ul class="navbar-nav">
         <li class="nav-item">
-            <a class="nav-link" data-widget="pushmenu" href="#" role="button">
-                <i class="fas fa-bars"></i>
-            </a>
+            <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
         </li>
         <li class="nav-item d-none d-sm-inline-block">
-            <a href="index.php" class="nav-link">Accueil</a>
+            <a href="index.php" class="nav-link fw-semibold">Accueil</a>
         </li>
     </ul>
 
     <ul class="navbar-nav ml-auto">
-        <li class="nav-item dropdown user-menu">
-            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
-                <img src="data:<?php echo $_SESSION['type_photo']; ?>;base64,<?php echo base64_encode($_SESSION['photo']); ?>" class="user-image img-circle elevation-2" alt="User Image">
-                <span class="d-none d-md-inline"><?= $_SESSION['nom_prenom']; ?></span>
-            </a>
-            <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-start">
-                <li class="user-header bg-primary">
-                    <img src="data:<?php echo $_SESSION['type_photo']; ?>;base64,<?php echo base64_encode($_SESSION['photo']); ?>" class="img-circle elevation-2" alt="User Image">
-                    <p>
-                        <?= $_SESSION['nom_prenom'] ?> - <?= $_SESSION['role'] ?>
-                    </p>
-                </li>
-                <li class="user-body">
-                    <div class="row">
-                        <div class="col-6 text-center">
-                            <a href="#" class="btn btn-default btn-flat">Profil</a>
-                        </div>
-                        <div class="col-6 text-center">
-                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/utilisateur/deconnexion" class="btn btn-default btn-flat">Déconnexion</a>
-                        </div>
+    <li class="nav-item dropdown user-menu">
+        <a href="#" class="nav-link dropdown-toggle d-flex align-items-center" data-bs-toggle="dropdown">
+            <img src="data:<?php echo $_SESSION['type_photo'] ?? 'image/jpeg'; ?>;base64,<?php echo base64_encode($_SESSION['photo'] ?? ''); ?>"
+                 class="user-image img-circle elevation-2 border border-white"
+                 alt="User Image"
+                 style="width: 38px; height: 38px; object-fit: cover;">
+            <span class="d-none d-md-inline ms-2 fw-semibold"><?= htmlspecialchars($_SESSION['nom_prenom'] ?? 'Utilisateur'); ?></span>
+            <i class="fas fa-chevron-down ms-1 text-muted small d-none d-lg-inline"></i>
+        </a>
+
+        <!-- Dropdown menu AdminLTE amélioré -->
+        <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end shadow-lg border-0 mt-2" style="border-radius: 16px; min-width: 280px;">
+            <!-- En-tête avec fond dégradé et photo plus grande -->
+            <li class="user-header bg-primary position-relative overflow-hidden" style="border-radius: 16px 16px 0 0; padding: 2.5rem 1.5rem;">
+                <div class="text-center">
+                    <div class="position-relative d-inline-block">
+                        <img src="data:<?php echo $_SESSION['type_photo'] ?? 'image/jpeg'; ?>;base64,<?php echo base64_encode($_SESSION['photo'] ?? ''); ?>"
+                             class="img-circle elevation-4 border border-white border-4"
+                             alt="User Avatar"
+                             style="width: 90px; height: 90px; object-fit: cover;">
+                        <!-- Point vert "en ligne" -->
+                        <div class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" 
+                             style="width: 26px; height: 26px; box-shadow: 0 0 0 4px rgba(40,167,69,0.3);"></div>
                     </div>
-                </li>
-            </ul>
-        </li>
-    </ul>
+
+                    <p class="text-white mt-3 mb-1 fw-bold fs-5">
+                        <?= htmlspecialchars($_SESSION['nom_prenom'] ?? 'Utilisateur'); ?>
+                    </p>
+                    <p class="text-white opacity-90 mb-0">
+                        <small><?= htmlspecialchars($_SESSION['role'] ?? 'Membre'); ?></small>
+                    </p>
+                </div>
+            </li>
+
+            <!-- Corps du menu -->
+            <li class="user-body bg-white" style="border-radius: 0 0 16px 16px;">
+                <div class="p-3">
+                    <a href="#" class="d-block text-decoration-none py-3 px-3 rounded hover-bg-light text-dark">
+                        <i class="fas fa-user-circle text-primary me-3"></i> Mon Profil
+                    </a>
+                    <a href="#" class="d-block text-decoration-none py-3 px-3 rounded hover-bg-light text-dark">
+                        <i class="fas fa-cog text-muted me-3"></i> Paramètres
+                    </a>
+                    <hr class="my-2">
+
+                    <!-- Bouton Déconnexion en rouge -->
+                    <a href="<?= old_url('/utilisateur/deconnexion') ?>" 
+                       class="btn btn-danger btn-block text-white fw-bold mt-2">
+                        <i class="fas fa-sign-out-alt me-2"></i> Déconnexion
+                    </a>
+                </div>
+
+                <!-- Pied de page avec date de connexion -->
+                <div class="text-center py-2 bg-light small text-muted border-top">
+                    Connecté le <?= date('d/m/Y à H:i') ?>
+                </div>
+            </li>
+        </ul>
+    </li>
+</ul>
+    
+
+
 </nav>
 
 <!-- ==================== SIDEBAR ==================== -->
@@ -108,40 +151,40 @@
                                 <p>Enregistrement Réservations</p>
                             </a>
                         </li>
+
+
                         <li class="nav-item">
                             <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/reservation/reservation_par_hotel" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
-                                <p>Par hôtel (période)</p>
+                                <p>Details reservations</p>
                             </a>
                         </li>
+
+
+ 
                         <li class="nav-item">
-                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/reservation/reservation_par_chambre" class="nav-link">
+                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/reservation/chambre_occupee_hotel" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
-                                <p>Par chambre (période)</p>
+                                <p>Etats des chambres</p>
                             </a>
                         </li>
+
+
+
+          
                         <li class="nav-item">
-                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/reservation/chambre_occupee_periode" class="nav-link">
+                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/reservation/liste_chambre_libre_hotel" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
-                                <p>Chambres occupées (période)</p>
+                                <p>Listes par type</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href=<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/reservation/chambre_occupee_periode" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Chambres réservées (période)</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/reservation/liste_chambre_libre_periode" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Chambres libres (période)</p>
-                            </a>
-                        </li>
+
+
+                       
                         <li class="nav-item">
                             <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/reservation/liste_reservation_facture" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
-                                <p>Par facture</p>
+                                <p>Factures reservations</p>
                             </a>
                         </li>
                     </ul>
@@ -160,6 +203,17 @@
                                 <p>Enregistrement Clients</p>
                             </a>
                         </li>
+
+
+                        <li class="nav-item">
+                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/clients/liste" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Liste Clients</p>
+                            </a>
+                        </li>
+
+
+
                     </ul>
                 </li>
 
@@ -228,39 +282,27 @@
                         <li class="nav-item">
                             <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/transaction/transaction_facture" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
-                                <p>Par facture (période)</p>
+                                <p>Transactions globales</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/transaction/transaction_type" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Par type (période)</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/transaction/impression" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Impression reçu</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/transaction/rapport" class="nav-link">
-                                <i class="far fa-circle nav-icon"></i>
-                                <p>Reporting</p>
-                            </a>
-                        </li>
+
+
                         <li class="nav-item">
                             <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/transaction/solde_caisse" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
-                                <p>Solde caisse</p>
+                                <p>Soldes</p>
                             </a>
                         </li>
+                       
+                        
                         <li class="nav-item">
-                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/transaction/solde_client" class="nav-link">
+                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/transaction/rapport" class="nav-link">
                                 <i class="far fa-circle nav-icon"></i>
-                                <p>Solde clients</p>
+                                <p>Rapports transactions</p>
                             </a>
                         </li>
+                        
+                       
                     </ul>
                 </li>
 
@@ -293,6 +335,16 @@
                                 <p>Enregistrement Hôtels</p>
                             </a>
                         </li>
+
+                        <li class="nav-item">
+                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/hotel/liste" class="nav-link">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Liste Hôtels</p>
+                            </a>
+                        </li>
+
+
+
                     </ul>
                 </li>
 

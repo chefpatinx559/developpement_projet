@@ -18,6 +18,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Tous les champs sont obligatoires.";
     } else {
         try {
+<<<<<<< HEAD
+            // 1. On récupère l'utilisateur par login + état actif
+            $stmt = $pdo->prepare("SELECT * FROM utilisateurs WHERE login = ? AND etat = 'actif' LIMIT 1");
+            $stmt->execute([$login]);
+            $user = $stmt->fetch();
+
+            if ($user && password_verify($mdp, $user['mdp'])) {
+                // Connexion réussie → on crée la session
+=======
             // ON RETIRE mdp=? de la requête SQL ! On cherche seulement par login + état
             $stmt = $pdo->prepare("SELECT * FROM utilisateurs WHERE login = ? AND etat = 'actif' ");
             $stmt->execute([$login]);
@@ -29,12 +38,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                // session_start(); // mets-le en haut du fichier, pas ici !
                 session_regenerate_id(true);
 
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                 $_SESSION['utilisateur_id'] = $user['utilisateur_id'];
                 $_SESSION['nom_prenom']     = $user['nom_prenom'];
                 $_SESSION['login']          = $user['login'];
                 $_SESSION['role']           = $user['role'];
                 $_SESSION['photo']          = $user['photo'];
                 $_SESSION['type_photo']     = $user['type_photo'];
+<<<<<<< HEAD
+
+                // Redirection propre et sécurisée
+                $base_url = dirname($_SERVER['SCRIPT_NAME']);
+                if (substr($base_url, -1) === '/') {
+                    $base_url = substr($base_url, 0, -1);
+                }
+                header("Location: $base_url/utilisateur/dashboard");
+                exit;
+=======
 
                 // Ta redirection habituelle
                 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
@@ -49,6 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <?php
                 //exit();
 
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
             } else {
                 $error = "Login ou mot de passe incorrect.";
             }
@@ -92,14 +113,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         .card-header img {
             width: 80px; height: 80px;
+<<<<<<< HEAD
+            border-radius: 50%; object-fit: cover;
+            border: 4px solid white; margin-bottom: 1rem;
+=======
             border-radius: 50%;
             object-fit: cover;
             border: 4px solid white;
             margin-bottom: 1rem;
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
         }
         .input-group-text { background: #007bff; color: white; border: none; }
         .form-control { border-radius: 0.5rem; }
         .btn-primary {
+<<<<<<< HEAD
+            background: #007bff; border: none;
+            border-radius: 0.5rem; padding: 0.75rem;
+            font-weight: 600; transition: 0.3s;
+        }
+        .btn-primary:hover { background: #0056b3; }
+        .alert { border-radius: 0.5rem; font-size: 0.9rem; }
+        .text-muted a { color: #007bff; text-decoration: none; }
+        .text-muted a:hover { text-decoration: underline; }
+=======
             background: #007bff;
             border: none;
             border-radius: 0.5rem;
@@ -108,6 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         .btn-primary:hover { background: #0056b3; }
         .alert { border-radius: 0.5rem; font-size: 0.9rem; }
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
     </style>
 </head>
 <body class="hold-transition login-page">
@@ -119,11 +156,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h4 class="mb-0"><b>Soutra</b>+</h4>
             <small>Gestion Hôtelière</small>
         </div>
+<<<<<<< HEAD
+        <div class="card-body p-4">
+            <p class="login-box-msg text-center mb-4">Connectez-vous à votre compte</p>
+
+            <?php if (isset($error)): ?>
+=======
 
         <div class="card-body p-4">
             <p class="login-box-msg text-center mb-4">Connectez-vous à votre compte</p>
 
             <?php if (!empty($error)): ?>
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                 <div class="alert alert-danger alert-dismissible fade show">
                     <?= htmlspecialchars($error) ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -132,13 +176,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <form method="post" action="">
                 <div class="input-group mb-3">
+<<<<<<< HEAD
+                    <input type="text" name="login" class="form-control" placeholder="Login" required autofocus>
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+=======
                     <input type="text" name="login" class="form-control" placeholder="Login" value="<?= htmlspecialchars($login ?? '') ?>" required autofocus>
                     <span class="input-group-text"><span class="fas fa-user"></span></span>
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                 </div>
 
                 <div class="input-group mb-4">
                     <input type="password" name="mdp" class="form-control" placeholder="Mot de passe" required>
+<<<<<<< HEAD
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+=======
                     <span class="input-group-text"><span class="fas fa-lock"></span></span>
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                 </div>
 
                 <div class="row">
@@ -148,7 +201,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </button>
                         <br><br>
                         Vous n'avez pas de compte ? 
+<<<<<<< HEAD
+                        <a href="<?= dirname($_SERVER['SCRIPT_NAME']) ?>/utilisateur/inscription">
+=======
                         <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/utilisateur/inscription">
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
                             Inscrivez-vous
                         </a>
                     </div>

@@ -3,11 +3,9 @@
 //session_start();
 require "database/database.php";
 
-
 // ==================== VARIABLES DASHBOARD ====================
 $user_name = $_SESSION['nom_prenom'] ?? "Utilisateur Anonyme";
 $user_role = $_SESSION['role'] ?? "Réception";
-
 // Photo utilisateur sécurisée
 if (!empty($_SESSION['photo']) && !empty($_SESSION['type_photo'])) {
     $user_photo = 'data:' . $_SESSION['type_photo'] . ';base64,' . base64_encode($_SESSION['photo']);
@@ -25,8 +23,6 @@ if (isset($_GET['delete'])) {
     } catch (Exception $e) {
         $_SESSION['message'] = "Erreur lors de la suppression : " . $e->getMessage();
     }
-   // header("Location: crud_utilisateurs.php");
-    //exit;
 }
 
 // ==================== AJOUT / MODIFICATION ====================
@@ -35,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id = trim($_POST['utilisateur_id']);
     $nom = trim($_POST['nom_prenom']);
     $login = trim($_POST['login']);
-    $mdp = $_POST['mdp'] ?? '';
+    $mdp = $_POST['mdp'] ?? '';               // Toujours pris en compte
     $telephone = trim($_POST['telephone']);
     $email = trim($_POST['email']);
     $role = $_POST['role'];
@@ -68,11 +64,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['message'] = "Utilisateur ajouté avec succès.";
             }
         }
-
         if ($action === 'update') {
             $sql = "UPDATE utilisateurs SET
                     nom_prenom = ?, login = ?, telephone = ?, email = ?, role = ?, etat = ?";
             $params = [$nom, $login, $telephone, $email, $role, $etat];
+
+            // Le mot de passe est TOUJOURS mis à jour s’il est rempli
             if (!empty($mdp)) {
                 $sql .= ", mdp = ?";
                 $params[] = password_hash($mdp, PASSWORD_BCRYPT);
@@ -84,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $sql .= " WHERE utilisateur_id = ?";
             $params[] = $id;
+
             $stmt = $pdo->prepare($sql);
             $stmt->execute($params);
             $_SESSION['message'] = "Utilisateur modifié avec succès.";
@@ -91,8 +89,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $_SESSION['message'] = "Erreur : " . $e->getMessage();
     }
-    //header("Location: crud_utilisateurs.php");
-   // exit;
 }
 
 // ==================== LISTE TOUS LES UTILISATEURS ====================
@@ -108,7 +104,6 @@ $message = $_SESSION['message'] ?? '';
 $alert_type = (strpos($message, 'Erreur') === 0) ? 'danger' : 'success';
 if ($message) unset($_SESSION['message']);
 ?>
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -129,7 +124,6 @@ if ($message) unset($_SESSION['message']);
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
     <?php include 'config/dashboard.php'; ?>
-
     <div class="content-wrapper">
         <section class="content-header">
             <div class="container-fluid">
@@ -146,7 +140,6 @@ if ($message) unset($_SESSION['message']);
                 </div>
             </div>
         </section>
-
         <section class="content">
             <div class="container-fluid">
                 <!-- MESSAGE FLASH -->
@@ -235,7 +228,6 @@ if ($message) unset($_SESSION['message']);
             </div>
         </section>
     </div>
-
     <footer class="main-footer">
         <strong>© 2025 <a href="#">Soutra+</a>.</strong> Tous droits réservés.
         <div class="float-right d-none d-sm-inline-block">
@@ -270,8 +262,8 @@ if ($message) unset($_SESSION['message']);
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Mot de passe <span class="text-danger">*</span></label>
-                            <input type="password" name="mdp" id="mdp" class="form-control" minlength="6">
-                            <small class="text-muted">Laissez vide pour ne pas modifier</small>
+                            <input type="password" name="mdp" id="mdp" class="form-control" minlength="6" required>
+                            <small class="text-muted">Minimum 6 caractères – modifiable à tout moment</small>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Téléphone</label>
@@ -319,6 +311,8 @@ if ($message) unset($_SESSION['message']);
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 <script>
     const modal = new bootstrap.Modal('#userModal');
+
+    // AJOUT
     document.getElementById('addBtn').addEventListener('click', () => {
         document.getElementById('userForm').reset();
         document.getElementById('modalTitle').innerText = 'Ajouter un utilisateur';
@@ -329,6 +323,7 @@ if ($message) unset($_SESSION['message']);
         modal.show();
     });
 
+    // MODIFICATION
     document.querySelectorAll('.edit-btn').forEach(btn => {
         btn.addEventListener('click', function () {
             document.getElementById('modalTitle').innerText = 'Modifier un utilisateur';
@@ -341,8 +336,11 @@ if ($message) unset($_SESSION['message']);
             document.getElementById('telephone').value = this.dataset.bsTel;
             document.getElementById('role').value = this.dataset.bsRole;
             document.getElementById('etat').value = this.dataset.bsEtat;
-            document.getElementById('mdp').required = false;
-            document.getElementById('mdp').placeholder = "Laisser vide pour ne pas changer";
+
+            // Le champ mot de passe reste toujours modifiable
+            document.getElementById('mdp').value = '';
+            document.getElementById('mdp').required = false;   // pas obligatoire si on ne veut pas changer
+            document.getElementById('mdp').placeholder = "Nouveau mot de passe (laisser vide pour conserver l’ancien)";
             modal.show();
         });
     });
