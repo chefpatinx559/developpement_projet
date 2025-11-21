@@ -66,7 +66,7 @@ if (isset($_POST['export']) && in_array($_POST['export'], ['excel', 'csv', 'pdf'
     }
 
     if ($_POST['export'] === 'pdf') {
-        $pdf = new FPDF('L', 'mm', 'A3');
+      $pdf = new FPDF('L', 'mm', 'A4');
         $pdf->AddPage();
         $pdf->SetFont('Arial','B',20);
         $pdf->SetFillColor(0,123,255);
@@ -92,11 +92,11 @@ if (isset($_POST['export']) && in_array($_POST['export'], ['excel', 'csv', 'pdf'
         $i = 1;
         foreach ($data as $row) {
             $pdf->Cell(15,10,$i++,1,0,'C');
-            $pdf->Cell(90,10,utf8_decode($row['nom_prenom']),1,0,'L');
+            $pdf->Cell(90,10,($row['nom_prenom']),1,0,'L');
             $pdf->Cell(70,10,$row['login'],1,0,'C');
-            $pdf->Cell(90,10,utf8_decode($row['email']??'—'),1,0,'L');
+            $pdf->Cell(90,10,($row['email']??'—'),1,0,'L');
             $pdf->Cell(60,10,$row['telephone']??'—',1,0,'C');
-            $pdf->Cell(60,10,utf8_decode($row['role']),1,0,'C');
+            $pdf->Cell(60,10,($row['role']),1,0,'C');
             $pdf->Cell(40,10,ucfirst($row['etat']),1,1,'C');
         }
         $pdf->Output('D', 'Utilisateurs_' . date('d-m-Y_H-i') . '.pdf');
