@@ -1,4 +1,5 @@
 <?php
+<<<<<<< HEAD
 require "database/database.php";
 
 // Inclusion FPDF seulement si export PDF
@@ -19,11 +20,28 @@ if ($code_chambre !== '') {
     $params[] = $code_chambre;
 }
 if ($date_debut !== '' && $date_fin !== '') {
+=======
+//session_start();
+require "database/database.php";
+
+// ==================== FILTRE ====================
+$code_chambre = $_GET['code_chambre'] ?? '';
+$date_debut = $_GET['date_debut'] ?? '';
+$date_fin = $_GET['date_fin'] ?? '';
+$where = "WHERE 1=1";
+$params = [];
+if ($code_chambre) {
+    $where .= " AND r.code_chambre = ?";
+    $params[] = $code_chambre;
+}
+if ($date_debut && $date_fin) {
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
     $where .= " AND r.date_reservation BETWEEN ? AND ?";
     $params[] = $date_debut;
     $params[] = $date_fin;
 }
 
+<<<<<<< HEAD
 // ==================== EXPORT (CSV / EXCEL / PDF) ====================
 if (isset($_POST['export']) && in_array($_POST['export'], ['excel', 'csv', 'pdf'])) {
 
@@ -196,11 +214,34 @@ foreach ($all as $r) {
 $chambres = $pdo->query("SELECT code_chambre, nom_chambre FROM chambres ORDER BY nom_chambre")->fetchAll();
 ?>
 
+=======
+// ==================== LISTE ====================
+$stmt = $pdo->prepare("
+    SELECT r.*, cl.nom_prenom_client, ch.nom_chambre, h.nom_hotel 
+    FROM reservations r 
+    LEFT JOIN clients cl ON r.code_client = cl.code_client 
+    LEFT JOIN chambres ch ON r.code_chambre = ch.code_chambre 
+    LEFT JOIN hotels h ON ch.code_hotel = h.code_hotel 
+    $where 
+    ORDER BY r.date_reservation DESC
+");
+$stmt->execute($params);
+$reservations = $stmt->fetchAll();
+
+$chambres = $pdo->query("SELECT code_chambre, nom_chambre FROM chambres ORDER BY nom_chambre")->fetchAll();
+
+// ==================== UTILISATEUR CONNECTÉ ====================
+$user_name = "Jean Dupont";
+$user_role = "Administrateur";
+$user_photo = "https://via.placeholder.com/160x160/007bff/ffffff?text=JD";
+?>
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+<<<<<<< HEAD
     <title>Hotelio | Réservations par Chambre</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css">
@@ -209,10 +250,17 @@ $chambres = $pdo->query("SELECT code_chambre, nom_chambre FROM chambres ORDER BY
         .badge-occupé { background:#dc3545; color:#fff; }
         .badge-libre { background:#28a745; color:#fff; }
     </style>
+=======
+    <title>Soutra+ | Réservations par Chambre</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper">
     <?php include 'config/dashboard.php'; ?>
+<<<<<<< HEAD
 
     <div class="content-wrapper">
         <section class="content-header">
@@ -242,10 +290,33 @@ $chambres = $pdo->query("SELECT code_chambre, nom_chambre FROM chambres ORDER BY
                                         <option value="<?= $ch['code_chambre'] ?>" <?= $code_chambre === $ch['code_chambre'] ? 'selected' : '' ?>>
                                             <?= htmlspecialchars($ch['nom_chambre']) ?>
                                         </option>
+=======
+    <div class="content-wrapper">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1>Réservations par Chambre</h1>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="content">
+            <div class="container-fluid">
+                <div class="card">
+                    <div class="card-header">
+                        <form method="get" class="row g-3">
+                            <div class="col-md-4">
+                                <select name="code_chambre" class="form-control">
+                                    <option value="">-- Sélectionner une chambre --</option>
+                                    <?php foreach ($chambres as $ch): ?>
+                                        <option value="<?= $ch['code_chambre'] ?>" <?= $code_chambre == $ch['code_chambre'] ? 'selected' : '' ?>><?= htmlspecialchars($ch['nom_chambre']) ?></option>
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
                                     <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="col-md-3">
+<<<<<<< HEAD
                                 <label class="form-label">Date début</label>
                                 <input type="date" name="date_debut" class="form-control" value="<?= htmlspecialchars($date_debut) ?>">
                             </div>
@@ -313,12 +384,50 @@ $chambres = $pdo->query("SELECT code_chambre, nom_chambre FROM chambres ORDER BY
                                             </span>
                                         </td>
                                     </tr>
+=======
+                                <input type="date" name="date_debut" class="form-control" value="<?= htmlspecialchars($date_debut) ?>">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="date" name="date_fin" class="form-control" value="<?= htmlspecialchars($date_fin) ?>">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary">Filtrer</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Numéro</th>
+                                        <th>Date Rés.</th>
+                                        <th>Client</th>
+                                        <th>Chambre</th>
+                                        <th>Hôtel</th>
+                                        <th>Statut</th>
+                                        <th>Montant</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($reservations as $r): ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($r['numero_reservation']) ?></td>
+                                            <td><?= date('d/m/Y', strtotime($r['date_reservation'])) ?></td>
+                                            <td><?= htmlspecialchars($r['nom_prenom_client'] ?? '—') ?></td>
+                                            <td><?= htmlspecialchars($r['nom_chambre'] ?? '—') ?></td>
+                                            <td><?= htmlspecialchars($r['nom_hotel'] ?? '—') ?></td>
+                                            <td><span class="badge bg-<?= $r['statut_reservation'] === 'libre' ? 'success' : ($r['statut_reservation'] === 'occupé' ? 'danger' : 'warning') ?>"><?= ucfirst($r['statut_reservation']) ?></span></td>
+                                            <td><?= htmlspecialchars($r['montant_reservation']) ?> FCFA</td>
+                                        </tr>
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
+<<<<<<< HEAD
                 <?php endforeach; ?>
 
                 <?php if (empty($group)): ?>
@@ -332,5 +441,17 @@ $chambres = $pdo->query("SELECT code_chambre, nom_chambre FROM chambres ORDER BY
         </section>
     </div>
 </div>
+=======
+            </div>
+        </section>
+    </div>
+    <footer class="main-footer">
+        <strong>© 2025 <a href="#">Soutra+</a>.</strong> Tous droits réservés.
+    </footer>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
 </body>
 </html>

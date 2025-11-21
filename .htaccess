@@ -1,9 +1,13 @@
 RewriteEngine On
+<<<<<<< HEAD
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)$ router.php?c=$1&a=$2
 RewriteRule ^([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)$ router.php?c=$1&a=$2&id=$3
 RewriteRule ^([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)$ router.php?c=$1&a=$2&id=$3&ido=$4
+=======
+RewriteRule ^(.*)/(.*)$ router.php?c=$1&a=$2 [QSA,L]
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
 <IfModule mod_autoindex.c>
 Options -Indexes
 </IfModule>

@@ -51,6 +51,7 @@ if(!empty($_SESSION['role'])){ if ($_SESSION['role'] != 'Superviseur'  and $_SES
     }
 
 
+<<<<<<< HEAD
     public function chambre() {
   
 
@@ -71,6 +72,8 @@ if(!empty($_SESSION['role'])){ if ($_SESSION['role'] != 'Superviseur'  and $_SES
        include "views/albums/get_chambres.php";
     }
 
+=======
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
 }
 
 

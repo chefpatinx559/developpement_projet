@@ -183,7 +183,15 @@ foreach ($all as $c) {
                     </button>&nbsp &nbsp
                     <button type="submit" name="export" value="pdf" class="btn btn-danger">
                         <i class="fas fa-file-pdf"></i> PDF
+<<<<<<< HEAD
                     </button>
+=======
+                    </button>&nbsp &nbsp
+                    <a  href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/chambre/import" class="btn btn-default">
+                        <i class="fas fa-file-excel"></i> Importer
+                    </a>
+
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
                 </form>
 
                 <!-- Liste des chambres groupées -->

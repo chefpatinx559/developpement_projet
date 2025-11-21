@@ -1,5 +1,6 @@
 <?php
 // views/utilisateurs/connexion.php
+<<<<<<< HEAD
 //session_start();
 require_once "database/database.php";
 
@@ -9,10 +10,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $mdp = $_POST['mdp'] ?? '';
 
     // Validation
+=======
+//session_start(); // OBLIGATOIRE, décommenté !
+
+require "database/database.php"; // Ajuste le chemin si besoin
+
+$error = "";
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $login = trim($_POST['login'] ?? '');
+    $mdp   = $_POST['mdp'] ?? ''; // pas de trim sur le mdp ! 
+
+    // Correction du bug ici
+    $login = trim($_POST['login'] ?? '');
+    $mdp   = $_POST['mdp'] ?? '';
+
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
     if (empty($login) || empty($mdp)) {
         $error = "Tous les champs sont obligatoires.";
     } else {
         try {
+<<<<<<< HEAD
             $stmt = $pdo->prepare("SELECT * FROM utilisateurs WHERE login = ? AND mdp= ? AND etat = 'Actif'");
             $stmt->execute([$login,$mdp]);
             $user = $stmt->fetch();
@@ -32,6 +50,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <script type='text/javascript'>document.location.replace('<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/utilisateur/dashboard');</script>";
             <?php
  
+=======
+<<<<<<< HEAD
+            // 1. On récupère l'utilisateur par login + état actif
+            $stmt = $pdo->prepare("SELECT * FROM utilisateurs WHERE login = ? AND etat = 'actif' LIMIT 1");
+            $stmt->execute([$login]);
+            $user = $stmt->fetch();
+
+            if ($user && password_verify($mdp, $user['mdp'])) {
+                // Connexion réussie → on crée la session
+=======
+            // ON RETIRE mdp=? de la requête SQL ! On cherche seulement par login + état
+            $stmt = $pdo->prepare("SELECT * FROM utilisateurs WHERE login = ? AND etat = 'actif' ");
+            $stmt->execute([$login]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // On vérifie le mot de passe avec password_verify UNIQUEMENT ici
+            if ($user && password_verify($mdp, $user['mdp'])) {
+
+               // session_start(); // mets-le en haut du fichier, pas ici !
+                session_regenerate_id(true);
+
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
+                $_SESSION['utilisateur_id'] = $user['utilisateur_id'];
+                $_SESSION['nom_prenom']     = $user['nom_prenom'];
+                $_SESSION['login']          = $user['login'];
+                $_SESSION['role']           = $user['role'];
+                $_SESSION['photo']          = $user['photo'];
+                $_SESSION['type_photo']     = $user['type_photo'];
+<<<<<<< HEAD
+
+                // Redirection propre et sécurisée
+                $base_url = dirname($_SERVER['SCRIPT_NAME']);
+                if (substr($base_url, -1) === '/') {
+                    $base_url = substr($base_url, 0, -1);
+                }
+                header("Location: $base_url/utilisateur/dashboard");
+                exit;
+=======
+
+                // Ta redirection habituelle
+                $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+                $host = $_SERVER['HTTP_HOST'];
+                $dir = dirname($_SERVER['PHP_SELF']);
+                $base = ($dir !== '/' && substr($dir, -1) === '/') ? substr($dir, 0, -1) : $dir;
+                $redirect_url = $protocol . $host . $base . '/utilisateur/dashboard';
+                ?>
+                <script type="text/javascript">
+                    document.location.replace("<?= $redirect_url ?>");
+                </script>
+                <?php
+                //exit();
+
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
             } else {
                 $error = "Login ou mot de passe incorrect.";
             }
@@ -41,25 +113,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+<<<<<<< HEAD
+=======
+
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Soutra+ | Connexion</title>
+<<<<<<< HEAD
     <!-- AdminLTE + FontAwesome + Bootstrap 5 -->
+=======
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .login-page {
+<<<<<<< HEAD
             background: #f8f9fa; /* Fond gris très clair, propre et professionnel */
+=======
+            background: #f8f9fa;
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 1rem;
         }
+<<<<<<< HEAD
         .login-box {
             width: 100%;
             max-width: 400px;
@@ -67,6 +151,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .card {
             border-radius: 1rem;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+=======
+        .login-box { width: 100%; max-width: 400px; }
+        .card {
+            border-radius: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
             overflow: hidden;
             border: 1px solid #e0e0e0;
         }
@@ -77,12 +167,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             padding: 2rem 1rem;
         }
         .card-header img {
+<<<<<<< HEAD
             width: 80px;
             height: 80px;
+=======
+            width: 80px; height: 80px;
+<<<<<<< HEAD
+            border-radius: 50%; object-fit: cover;
+            border: 4px solid white; margin-bottom: 1rem;
+=======
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
             border-radius: 50%;
             object-fit: cover;
             border: 4px solid white;
             margin-bottom: 1rem;
+<<<<<<< HEAD
         }
         .input-group-text {
             background: #007bff;
@@ -93,11 +192,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             border-radius: 0.5rem;
         }
         .btn-primary {
+=======
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
+        }
+        .input-group-text { background: #007bff; color: white; border: none; }
+        .form-control { border-radius: 0.5rem; }
+        .btn-primary {
+<<<<<<< HEAD
+            background: #007bff; border: none;
+            border-radius: 0.5rem; padding: 0.75rem;
+            font-weight: 600; transition: 0.3s;
+        }
+        .btn-primary:hover { background: #0056b3; }
+        .alert { border-radius: 0.5rem; font-size: 0.9rem; }
+        .text-muted a { color: #007bff; text-decoration: none; }
+        .text-muted a:hover { text-decoration: underline; }
+=======
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
             background: #007bff;
             border: none;
             border-radius: 0.5rem;
             padding: 0.75rem;
             font-weight: 600;
+<<<<<<< HEAD
             transition: 0.3s;
         }
         .btn-primary:hover {
@@ -120,23 +237,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="login-box">
     <div class="card">
         <!-- En-tête -->
+=======
+        }
+        .btn-primary:hover { background: #0056b3; }
+        .alert { border-radius: 0.5rem; font-size: 0.9rem; }
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
+    </style>
+</head>
+<body class="hold-transition login-page">
+
+<div class="login-box">
+    <div class="card">
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
         <div class="card-header">
             <img src="https://via.placeholder.com/80/007bff/ffffff?text=S+" alt="Logo">
             <h4 class="mb-0"><b>Soutra</b>+</h4>
             <small>Gestion Hôtelière</small>
         </div>
+<<<<<<< HEAD
         <!-- Corps -->
         <div class="card-body p-4">
             <p class="login-box-msg text-center mb-4">Connectez-vous à votre compte</p>
 
             <!-- Message d'erreur -->
             <?php if (isset($error)): ?>
+=======
+<<<<<<< HEAD
+        <div class="card-body p-4">
+            <p class="login-box-msg text-center mb-4">Connectez-vous à votre compte</p>
+
+            <?php if (isset($error)): ?>
+=======
+
+        <div class="card-body p-4">
+            <p class="login-box-msg text-center mb-4">Connectez-vous à votre compte</p>
+
+            <?php if (!empty($error)): ?>
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
                 <div class="alert alert-danger alert-dismissible fade show">
                     <?= htmlspecialchars($error) ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
 
+<<<<<<< HEAD
             <!-- Formulaire -->
             <form method="post" action="">
                 <div class="input-group mb-3">
@@ -151,16 +296,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <span class="fas fa-lock"></span>
                     </span>
                 </div>
+=======
+            <form method="post" action="">
+                <div class="input-group mb-3">
+<<<<<<< HEAD
+                    <input type="text" name="login" class="form-control" placeholder="Login" required autofocus>
+                    <span class="input-group-text"><i class="fas fa-user"></i></span>
+=======
+                    <input type="text" name="login" class="form-control" placeholder="Login" value="<?= htmlspecialchars($login ?? '') ?>" required autofocus>
+                    <span class="input-group-text"><span class="fas fa-user"></span></span>
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
+                </div>
+
+                <div class="input-group mb-4">
+                    <input type="password" name="mdp" class="form-control" placeholder="Mot de passe" required>
+<<<<<<< HEAD
+                    <span class="input-group-text"><i class="fas fa-lock"></i></span>
+=======
+                    <span class="input-group-text"><span class="fas fa-lock"></span></span>
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
+                </div>
+
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
                 <div class="row">
                     <div class="col-12">
                         <button type="submit" class="btn btn-primary btn-block w-100">
                             Se connecter
                         </button>
+<<<<<<< HEAD
                         <br>
                         Vous n'avez pas de compte? <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/utilisateur/inscription">Inscrivez-vous</a>
                     </div>
                 </div>
             </form>
+=======
+                        <br><br>
+                        Vous n'avez pas de compte ? 
+<<<<<<< HEAD
+                        <a href="<?= dirname($_SERVER['SCRIPT_NAME']) ?>/utilisateur/inscription">
+=======
+                        <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/utilisateur/inscription">
+>>>>>>> 9ecb113a2e5352327ff75a3e20f37459a2a5e2b8
+                            Inscrivez-vous
+                        </a>
+                    </div>
+                </div>
+            </form>
+
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
             <div class="text-center mt-3">
                 <small class="text-muted">
                     © 2025 <a href="#">Soutra+</a>. Tous droits réservés.
@@ -170,7 +353,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
+<<<<<<< HEAD
 <!-- Scripts -->
+=======
+>>>>>>> 24653d20902f480a272f396807e06cb4679ae919
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
