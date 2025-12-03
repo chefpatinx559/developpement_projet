@@ -30,7 +30,7 @@ if(!empty($_SESSION['role'])){ if ($_SESSION['role'] != 'Superviseur'  and $_SES
 
 
 
-public function liste() {
+public function import() {
   
 
         /* Protection
@@ -47,7 +47,7 @@ if(!empty($_SESSION['role'])){ if ($_SESSION['role'] != 'Superviseur'  and $_SES
             }
         } */
 
-       include "views/albums/liste-album.php";
+       include "views/albums/get_chambres.php";
     }
 
 

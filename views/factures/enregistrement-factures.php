@@ -311,57 +311,74 @@ if ($message) unset($_SESSION['message']);
 </div>
 
 <!-- ==================== MODAL FACTURE ==================== -->
-<div class="modal fade" id="factureModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modalTitle">Ajouter une facture</h5>
-                <button type="button" class="btn-close text-white" data-bs-dismiss="modal"></button>
+<div class="modal fade" id="factureModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            
+            <!-- HEADER -->
+            <div class="modal-header bg-primary text-white border-0 py-3">
+                <h5 class="modal-title fw-bold fs-5" id="modalTitle">
+                    Ajouter une facture
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class COO="modal-body">
+
+            <!-- BODY -->
+            <div class="modal-body py-4 px-4 px-md-5">
+
                 <form id="factureForm" method="post">
                     <input type="hidden" name="action" id="formAction" value="add">
                     <input type="hidden" name="old_code" id="old_code">
-                    <div class="row g-3">
+
+                    <!-- Ligne 1 : Code + Titre -->
+                    <div class="row g-3 mb-3">
                         <div class="col-md-4">
-                            <label>Code Facture <span class="text-muted"></span></label>
-                            <input type="text" name="code_facture" id="code_facture" class="form-control" readonly placeholder="Ex: FACT88">
+                            <label class="form-label text-muted small mb-1">Code Facture</label>
+                            <input type="text" name="code_facture" id="code_facture" class="form-control form-control-lg bg-light" readonly value="FACT10">
                         </div>
                         <div class="col-md-8">
-                            <label>Titre facture</label>
-                            <input type="text" name="titre_facture" id="titre_facture" class="form-control" required>
+                            <label class="form-label text-muted small mb-1">Titre facture</label>
+                            <input type="text" name="titre_facture" id="titre_facture" class="form-control form-control-lg" required placeholder="Ex: Prestation mars 2025">
+                        </div>
+                    </div>
+
+                    <!-- Ligne 2 : Date + Montant HT + Montant TTC -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label text-muted small mb-1">Date facture</label>
+                            <input type="date" name="date_facture" id="date_facture" class="form-control form-control-lg" value="<?= date('Y-m-d') ?>" required>
                         </div>
                         <div class="col-md-4">
-                            <label>Date facture</label>
-                            <input type="date" name="date_facture" id="date_facture" class="form-control" value="<?= date('Y-m-d') ?>" required>
+                            <label class="form-label text-muted small mb-1">Montant HT</label>
+                            <input type="number" step="0.01" name="montant_ht" id="montant_ht" class="form-control form-control-lg text-end" required placeholder="0.00">
                         </div>
                         <div class="col-md-4">
-                            <label>Montant HT</label>
-                            <input type="number" step="0.01" name="montant_ht" id="montant_ht" class="form-control" required>
+                            <label class="form-label text-muted small mb-1">Montant TTC</label>
+                            <input type="number" step="0.01" name="montant_ttc" id="montant_ttc" class="form-control form-control-lg bg-success text-white fw-bold text-end" readonly value="0.00">
                         </div>
-                        <div class="col-md-4">
-                            <label>Montant TTC <small class="text-muted"></small></label>
-                            <input type="number" step="0.01" name="montant_ttc" id="montant_ttc" class="form-control" required readonly>
+                    </div>
+
+                    <!-- Ligne 3 : Taux + Type + État + Client -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label text-muted small mb-1">Taux taxes (%)</label>
+                            <input type="number" step="0.01" name="taux_taxes" id="taux_taxes" class="form-control form-control-lg text-end" value="18" required>
                         </div>
                         <div class="col-md-3">
-                            <label>Taux taxes (%)</label>
-                            <input type="number" step="0.01" name="taux_taxes" id="taux_taxes" class="form-control" value="18" required>
+                            <label class="form-label text-muted small mb-1">Type taxes</label>
+                            <input type="text" name="type_taxes" id="type_taxes" class="form-control form-control-lg" value="TVA" required>
                         </div>
                         <div class="col-md-3">
-                            <label>Type taxes</label>
-                            <input type="text" name="type_taxes" id="type_taxes" class="form-control" value="TVA" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label>État</label>
-                            <select name="etat_facture" id="etat_facture" class="form-control">
+                            <label class="form-label text-muted small mb-1">État</label>
+                            <select name="etat_facture" id="etat_facture" class="form-select form-select-lg">
                                 <option value="en attente">en attente</option>
                                 <option value="Payée">Payée</option>
-                                <option value="non payer">non payer</option>
+                                <option value="non payer">non payée</option>
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label>Client <span class="text-danger">*</span></label>
-                            <select name="code_client" id="code_client" class="form-control" required>
+                            <label class="form-label text-muted small mb-1">Client <span class="text-danger">*</span></label>
+                            <select name="code_client" id="code_client" class="form-select form-select-lg" required>
                                 <option value="">-- Sélectionner un client --</option>
                                 <?php foreach ($clients as $c): ?>
                                     <option value="<?= htmlspecialchars($c['code_client']) ?>">
@@ -371,8 +388,12 @@ if ($message) unset($_SESSION['message']);
                             </select>
                         </div>
                     </div>
-                    <div class="mt-4 text-end">
-                        <button type="submit" class="btn btn-success px-4">Sauvegarder</button>
+
+                    <!-- BOUTON SAUVEGARDER -->
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-success btn-lg px-5 shadow-sm">
+                            Sauvegarder
+                        </button>
                     </div>
                 </form>
             </div>

@@ -292,11 +292,6 @@ function activeClass($path, $class = 'active') {
                                 <i class="far fa-circle nav-icon"></i><p>Enregistrement Hôtels</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="<?= old_url('/hotel/liste') ?>" class="nav-link <?= activeClass('/hotel/liste') ?>">
-                                <i class="far fa-circle nav-icon"></i><p>Liste Hôtels</p>
-                            </a>
-                        </li>
                     </ul>
                 </li>
 

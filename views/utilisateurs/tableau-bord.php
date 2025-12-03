@@ -184,7 +184,7 @@ $reservations_recentes = $stmt->fetchAll();
                                 <p>Chambres Occupées</p>
                             </div>
                             <div class="icon"><i class="fas fa-bed"></i></div>
-                            <a href="#" class="small-box-footer">sur <?= $total_chambres ?> totales <i class="fas fa-arrow-circle-right"></i></a>
+                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/chambre/liste" class="small-box-footer">sur <?= $total_chambres ?> totales <i class="fas fa-arrow-circle-right"></i></a>
                         </div>
                     </div>
                     <div class="col-lg-3 col-6">
@@ -194,7 +194,7 @@ $reservations_recentes = $stmt->fetchAll();
                                 <p>Revenus du Mois</p>
                             </div>
                             <div class="icon"><i class="fas fa-euro-sign"></i></div>
-                            <a href="#" class="small-box-footer">FCFA <i class="fas fa-arrow-circle-right"></i></a>
+                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/transaction/transaction_facture" class="small-box-footer">FCFA <i class="fas fa-arrow-circle-right"></i></a>
                         </div>
                     </div>
                     <div class="col-lg-3 col-6">
@@ -204,7 +204,7 @@ $reservations_recentes = $stmt->fetchAll();
                                 <p>Réservations Actives</p>
                             </div>
                             <div class="icon"><i class="fas fa-calendar-check"></i></div>
-                            <a href="#" class="small-box-footer">En cours <i class="fas fa-arrow-circle-right"></i></a>
+                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/reservation/reservation_par_hotel" class="small-box-footer">En cours <i class="fas fa-arrow-circle-right"></i></a>
                         </div>
                     </div>
                     <div class="col-lg-3 col-6">
@@ -214,7 +214,7 @@ $reservations_recentes = $stmt->fetchAll();
                                 <p>Clients Total</p>
                             </div>
                             <div class="icon"><i class="fas fa-users"></i></div>
-                            <a href="#" class="small-box-footer">Inscrits <i class="fas fa-arrow-circle-right"></i></a>
+                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/clients/enregistrement" class="small-box-footer">Inscrits <i class="fas fa-arrow-circle-right"></i></a>
                         </div>
                     </div>
                 </div>

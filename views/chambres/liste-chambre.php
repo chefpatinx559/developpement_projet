@@ -131,6 +131,7 @@ if (isset($_POST['export']) && in_array($_POST['export'], ['excel', 'csv', 'pdf'
         $pdf->Output('D', 'Chambres_' . date('d-m-Y_H-i') . '.pdf');
         exit;
     }
+    exit;
 }
 
 // ==================== AFFICHAGE NORMAL DE LA PAGE ====================

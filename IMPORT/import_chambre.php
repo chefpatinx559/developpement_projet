@@ -1,16 +1,5 @@
 <?php
-// ===================== CONFIGURATION BASE DE DONNÉES (à modifier)
-$host = 'localhost';
-$dbname = 'u738064605_soutra';
-$user = 'root';
-$pass = '';
-
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(Exception $e) {
-    die("Erreur connexion : " . $e->getMessage());
-}
+require "database/database.php";
 
 $message   = "";
 $inserted  = 0;

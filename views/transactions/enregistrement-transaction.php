@@ -3,7 +3,7 @@ require "./database/database.php";
 
 // Inclusion FPDF uniquement pour l'export PDF
 if (isset($_POST['export']) && $_POST['export'] === 'pdf') {
-    require_once './librairies/fpdf/fpdf.php';
+    require_once './librairiesfpdf/fpdf/fpdf.php';
 }
 
 // ==================== EXPORT EXCEL / CSV / PDF ====================
@@ -86,55 +86,80 @@ if (isset($_POST['export']) && in_array($_POST['export'], ['excel', 'csv', 'pdf'
         exit;
     }
 
-    // ====================== PDF (A4 Paysage recommandé) ======================
-    if ($_POST['export'] === 'pdf') {
-        $pdf = new FPDF('L', 'mm', 'A4'); // Paysage pour plus de colonnes
-        $pdf->AddPage();
-        $pdf->SetFont('Arial', 'B', 18);
-        $pdf->SetFillColor(0,123,255);
-        $pdf->SetTextColor(255,255,255);
-        $pdf->Cell(0,15, ('Liste des Transactions'), 0,1,'C',true);
-        $pdf->Ln(5);
-        $pdf->SetTextColor(0,0,0);
-        $pdf->SetFont('Arial','',10);
-        $pdf->Cell(0,8, ('Généré le ') . date('d/m/Y à H:i'),0,1,'R');
-        $pdf->Ln(8);
+    // ====================== PDF (CORRIGÉ ET PROPRE) ======================
+if ($_POST['export'] === 'pdf') {
+    // 1. On nettoie TOUTE sortie précédente
+    if (ob_get_level()) ob_end_clean();
 
-        $pdf->SetFont('Arial','B',9);
-        $pdf->SetFillColor(230,230,230);
-        $pdf->Cell(20,10,'N° Trans',1,0,'C',true);
-        $pdf->Cell(25,10,'Date/Heure',1,0,'C',true);
-        $pdf->Cell(25,10,'Montant',1,0,'C',true);
-        $pdf->Cell(20,10,'Frais',1,0,'C',true);
-        $pdf->Cell(25,10,'Total',1,0,'C',true);
-        $pdf->Cell(35,10,'Type',1,0,'C',true);
-        $pdf->Cell(50,10,'Client / Destinataire',1,0,'C',true);
-        $pdf->Cell(40,10,'Facture',1,0,'C',true);
-        $pdf->Cell(30,10,'Utilisateur',1,0,'C',true);
-        $pdf->Cell(25,10,'État',1,1,'C',true);
+    // 2. On charge FPDF seulement ici
+    require_once './librairiesfpdf/fpdf/fpdf.php';
 
-        $pdf->SetFont('Arial','',9);
-        foreach ($data as $row) {
-            $dateHeure = date('d/m/Y H:i', strtotime($row['date_transaction'] . ' ' . $row['heure_transaction']));
-            $client = $row['nom_prenom_client'] ?? $row['destinataire'] ?? '—';
-            $facture = $row['titre_facture'] ?? $row['code_facture'] ?? '—';
-            $user = $row['nom_utilisateur'] ?? $row['utilisateur_id'] ?? '—';
+    // 3. On récupère les données
+    $stmt = $pdo->query("
+        SELECT t.*, 
+               COALESCE(c.nom_prenom_client, t.destinataire, '—') as client,
+               COALESCE(f.titre_facture, t.code_facture, 'Aucune') as facture,
+               COALESCE(u.nom_prenom, t.utilisateur_id, 'Système') as utilisateur
+        FROM transactions t
+        LEFT JOIN clients c ON t.destinataire = c.code_client
+        LEFT JOIN factures f ON t.code_facture = f.code_facture
+        LEFT JOIN utilisateurs u ON t.utilisateur_id = u.utilisateur_id
+        ORDER BY t.date_transaction DESC, t.heure_transaction DESC
+    ");
+    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $pdf->Cell(20,8,$row['numero_transaction'],1,0,'C');
-            $pdf->Cell(25,8,$dateHeure,1,0,'C');
-            $pdf->Cell(25,8,number_format($row['montant_transaction']),1,0,'R');
-            $pdf->Cell(20,8,number_format($row['frais_transaction']),1,0,'R');
-            $pdf->Cell(25,8,number_format($row['montant_total']),1,0,'R');
-            $pdf->Cell(35,8,utf8_decode($row['type_transaction']),1,0,'C');
-            $pdf->Cell(50,8,utf8_decode($client),1,0,'L');
-            $pdf->Cell(40,8,utf8_decode($facture),1,0,'L');
-            $pdf->Cell(30,8,utf8_decode($user),1,0,'C');
-            $pdf->Cell(25,8,utf8_decode($row['etat_transaction']),1,1,'C');
-        }
+    // 4. Création du PDF
+    $pdf = new FPDF('L', 'mm', 'A4');
+    $pdf->AddPage();
+    $pdf->SetAutoPageBreak(true, 15);
 
-        $pdf->Output('D', 'Transactions_' . date('d-m-Y_H-i') . '.pdf');
-        exit;
+    // Titre
+    $pdf->SetFont('Arial', 'B', 18);
+    $pdf->SetFillColor(0, 123, 255);
+    $pdf->SetTextColor(255, 255, 255);
+    $pdf->Cell(0, 15, mb_convert_encoding('Liste des Transactions', 'Windows-1252', 'UTF-8'), 0, 1, 'C', true);
+    
+    $pdf->Ln(5);
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->SetFont('Arial', '', 10);
+    $pdf->Cell(0, 8, mb_convert_encoding('Généré le ' . date('d/m/Y à H:i'), 'Windows-1252', 'UTF-8'), 0, 1, 'R');
+    $pdf->Ln(8);
+
+    // En-tête tableau
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->SetFillColor(230, 230, 230);
+    $pdf->SetTextColor(0, 0, 0);
+
+    $header = ['N°', 'Date/Heure', 'Montant', 'Frais', 'Total', 'Type', 'Client/Destinataire', 'Facture', 'Utilisateur', 'État'];
+    $widths = [20, 28, 25, 20, 25, 30, 50, 40, 30, 25];
+
+    foreach ($header as $i => $h) {
+        $pdf->Cell($widths[$i], 10, mb_convert_encoding($h, 'Windows-1252', 'UTF-8'), 1, 0, 'C', true);
     }
+    $pdf->Ln();
+
+    // Données
+    $pdf->SetFont('Arial', '', 9);
+    foreach ($data as $row) {
+        $dateHeure = date('d/m/Y H:i', strtotime($row['date_transaction'] . ' ' . $row['heure_transaction']));
+
+        $pdf->Cell($widths[0], 8, $row['numero_transaction'], 1, 0, 'C');
+        $pdf->Cell($widths[1], 8, mb_convert_encoding($dateHeure, 'Windows-1252', 'UTF-8'), 1, 0, 'C');
+        $pdf->Cell($widths[2], 8, number_format($row['montant_transaction']), 1, 0, 'R');
+        $pdf->Cell($widths[3], 8, number_format($row['frais_transaction'] ?? 0), 1, 0, 'R');
+        $pdf->Cell($widths[4], 8, number_format($row['montant_total']), 1, 0, 'R');
+        $pdf->Cell($widths[5], 8, mb_convert_encoding($row['type_transaction'] ?? '', 'Windows-1252', 'UTF-8'), 1, 0, 'C');
+        $pdf->Cell($widths[6], 8, mb_convert_encoding($row['client'], 'Windows-1252', 'UTF-8'), 1, 0, 'L');
+        $pdf->Cell($widths[7], 8, mb_convert_encoding($row['facture'], 'Windows-1252', 'UTF-8'), 1, 0, 'L');
+        $pdf->Cell($widths[8], 8, mb_convert_encoding($row['utilisateur'], 'Windows-1252', 'UTF-8'), 1, 0, 'C');
+        $pdf->Cell($widths[9], 8, mb_convert_encoding($row['etat_transaction'] ?? 'En attente', 'Windows-1252', 'UTF-8'), 1, 1, 'C');
+    }
+
+    // Envoi du PDF
+    $filename = 'Transactions_' . date('d-m-Y_H-i') . '.pdf';
+    $pdf->Output('D', $filename);
+    exit;
+}
 }
 
 // ==================== AFFICHAGE NORMAL ====================

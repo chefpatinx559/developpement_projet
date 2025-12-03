@@ -2,51 +2,140 @@
 // session_start();
 require_once __DIR__ . '/../../database/database.php';
 
-// ==================== SUPPRESSION ====================
+/* ================================================================
+   1. GESTION DES EXPORTS → TOUT EN HAUT (avant tout HTML)
+   ================================================================ */
+if (isset($_POST['export']) && in_array($_POST['export'], ['excel', 'csv', 'pdf'])) {
+
+    $stmt = $pdo->query("SELECT * FROM hotels ORDER BY nom_hotel");
+    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    while (ob_get_level()) ob_end_clean();
+
+    // CSV
+    if ($_POST['export'] === 'csv') {
+        $filename = 'Hotels_' . date('d-m-Y_H-i') . '.csv';
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        echo "\xEF\xBB\xBF";
+        $out = fopen('php://output', 'w');
+        fputcsv($out, ['Code', 'Nom', 'Type', 'Ville', 'Quartier', 'Téléphone', 'Email', 'État'], ';');
+        foreach ($data as $row) {
+            fputcsv($out, [
+                $row['code_hotel'],
+                $row['nom_hotel'],
+                $row['type_hotel'] ?? 'Standard',
+                $row['ville_hotel'],
+                $row['quartier_hotel'] ?? '-',
+                $row['telephone_hotel'],
+                $row['email_hotel'],
+                ucfirst($row['etat_hotel'])
+            ], ';');
+        }
+        exit;
+    }
+
+    // Excel
+    if ($_POST['export'] === 'excel') {
+        $filename = 'Hotels_' . date('d-m-Y_H-i') . '.xls';
+        header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        echo "\xEF\xBB\xBF";
+        echo '<table border="1"><tr style="background:#198754;color:white;font-weight:bold;">
+                <th>Code</th><th>Nom</th><th>Type</th><th>Ville</th><th>Quartier</th><th>Téléphone</th><th>Email</th><th>État</th></tr>';
+        foreach ($data as $row) {
+            echo '<tr align="center">
+                    <td>' . htmlspecialchars($row['code_hotel']) . '</td>
+                    <td>' . htmlspecialchars($row['nom_hotel']) . '</td>
+                    <td>' . htmlspecialchars($row['type_hotel'] ?? 'Standard') . '</td>
+                    <td>' . htmlspecialchars($row['ville_hotel']) . '</td>
+                    <td>' . htmlspecialchars($row['quartier_hotel'] ?? '-') . '</td>
+                    <td>' . htmlspecialchars($row['telephone_hotel']) . '</td>
+                    <td>' . htmlspecialchars($row['email_hotel']) . '</td>
+                    <td>' . ucfirst($row['etat_hotel']) . '</td>
+                  </tr>';
+        }
+        echo '</table>';
+        exit;
+    }
+
+    // PDF
+    if ($_POST['export'] === 'pdf') {
+        require_once __DIR__ . '/../../librairiesfpdf/fpdf/fpdf.php';
+        $pdf = new FPDF('L', 'mm', 'A4');
+        $pdf->AddPage();
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->SetFillColor(25, 135, 84);
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->Cell(0, 12, mb_convert_encoding('Liste des Hôtels', 'Windows-1252', 'UTF-8'), 0, 1, 'C', true);
+        $pdf->Ln(5);
+        $pdf->SetTextColor(0);
+        $pdf->SetFillColor(220, 220, 220);
+        $pdf->SetFont('Arial', 'B', 10);
+        $widths = [25, 60, 40, 40, 40, 35, 50, 25];
+        $header = ['Code', 'Nom', 'Type', 'Ville', 'Quartier', 'Téléphone', 'Email', 'État'];
+        foreach ($header as $i => $h) {
+            $pdf->Cell($widths[$i], 10, mb_convert_encoding($h, 'Windows-1252', 'UTF-8'), 1, 0, 'C', true);
+        }
+        $pdf->Ln();
+        $pdf->SetFont('Arial', '', 9);
+        foreach ($data as $row) {
+            $pdf->Cell($widths[0], 8, $row['code_hotel'], 1, 0, 'C');
+            $pdf->Cell($widths[1], 8, mb_convert_encoding(mb_substr($row['nom_hotel'], 0, 30), 'Windows-1252', 'UTF-8'), 1, 0, 'L');
+            $pdf->Cell($widths[2], 8, mb_convert_encoding($row['type_hotel'] ?? 'Standard', 'Windows-1252', 'UTF-8'), 1, 0, 'L');
+            $pdf->Cell($widths[3], 8, mb_convert_encoding($row['ville_hotel'], 'Windows-1252', 'UTF-8'), 1, 0, 'L');
+            $pdf->Cell($widths[4], 8, mb_convert_encoding(mb_substr($row['quartier_hotel'] ?? '-', 0, 20), 'Windows-1252', 'UTF-8'), 1, 0, 'L');
+            $pdf->Cell($widths[5], 8, $row['telephone_hotel'], 1, 0, 'L');
+            $pdf->Cell($widths[6], 8, mb_convert_encoding(mb_substr($row['email_hotel'], 0, 25), 'Windows-1252', 'UTF-8'), 1, 0, 'L');
+            $pdf->Cell($widths[7], 8, mb_convert_encoding(ucfirst($row['etat_hotel']), 'Windows-1252', 'UTF-8'), 1, 1, 'C');
+        }
+        $pdf->Output('D', 'Hotels_' . date('d-m-Y_H-i') . '.pdf');
+        exit;
+    }
+}
+
+/* ================================================================
+   2. SUPPRESSION
+   ================================================================ */
 if (isset($_GET['delete'])) {
     try {
         $stmt = $pdo->prepare("DELETE FROM hotels WHERE code_hotel = ?");
         $stmt->execute([$_GET['delete']]);
         $_SESSION['message'] = "Hôtel supprimé avec succès.";
     } catch (Exception $e) {
-        $_SESSION['message'] = "Erreur lors de la suppression : impossible de supprimer un hôtel avec des chambres réservées.";
+        $_SESSION['message'] = "Impossible de supprimer : cet hôtel a des chambres ou réservations associées.";
     }
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
 }
 
-// ==================== AJOUT / MODIFICATION ====================
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+/* ================================================================
+   3. AJOUT / MODIFICATION
+   ================================================================ */
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['export'])) {
     $action = $_POST['action'] ?? '';
-    $code   = trim($_POST['code_hotel']);
-    $nom    = trim($_POST['nom_hotel']);
-    $type   = trim($_POST['type_hotel']);
-    $latitude   = trim($_POST['latitude_hotel']);
-    $longitude  = trim($_POST['longitude_hotel']);
-    $pays       = trim($_POST['pays_hotel']);
-    $ville      = trim($_POST['ville_hotel']);
-    $quartier   = trim($_POST['quartier_hotel']);
-    $adresse    = trim($_POST['adresse_hotel']);
-    $telephone  = trim($_POST['telephone_hotel']);
-    $email      = trim($_POST['email_hotel']);
-    $observation= $_POST['observation_hotel'];
-    $etat       = trim($_POST['etat_hotel']);
+    $code   = trim($_POST['code_hotel'] ?? '');
+    $nom    = trim($_POST['nom_hotel'] ?? '');
+    $type   = trim($_POST['type_hotel'] ?? '');
+    $latitude  = trim($_POST['latitude_hotel'] ?? '');
+    $longitude = trim($_POST['longitude_hotel'] ?? '');
+    $pays      = trim($_POST['pays_hotel'] ?? 'Côte d\'Ivoire');
+    $ville     = trim($_POST['ville_hotel'] ?? '');
+    $quartier  = trim($_POST['quartier_hotel'] ?? '');
+    $adresse   = trim($_POST['adresse_hotel'] ?? '');
+    $telephone = trim($_POST['telephone_hotel'] ?? '');
+    $email     = trim($_POST['email_hotel'] ?? '');
+    $observation = $_POST['observation_hotel'] ?? '';
+    $etat      = $_POST['etat_hotel'] ?? 'inactif';
 
-    // Génération automatique du code si vide (uniquement en ajout)
+    // Génération auto du code en ajout
     if ($action === 'add' && empty($code) && !empty($nom)) {
-        $prefix = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $nom), 0, 4)); // 4 premières lettres sans espaces/caractères spéciaux
-        $code = $prefix . mt_rand(1000, 9999);
-        // Garantir l'unicité
-        $i = 1;
-        $base = $code;
-        while (true) {
+        $prefix = strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $nom), 0, 4));
+        do {
+            $code = $prefix . mt_rand(1000, 9999);
             $check = $pdo->prepare("SELECT COUNT(*) FROM hotels WHERE code_hotel = ?");
             $check->execute([$code]);
-            if ($check->fetchColumn() == 0) break;
-            $code = $prefix . mt_rand(1000, 9999);
-            if ($i++ > 20) { // sécurité anti-boucle infinie
-                $code = $base . $i;
-                break;
-            }
-        }
+        } while ($check->fetchColumn() > 0);
     }
 
     try {
@@ -57,8 +146,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
             $stmt = $pdo->prepare($sql);
             $stmt->execute([$code, $nom, $type, $latitude, $longitude, $pays, $ville, $quartier, $adresse, $telephone, $email, $observation, $etat]);
-            $_SESSION['message'] = "Hôtel ajouté avec succès. Code généré : <strong>$code</strong>";
+            $_SESSION['message'] = "Hôtel ajouté avec succès. Code : <strong>$code</strong>";
         }
+
         if ($action === 'update') {
             $sql = "UPDATE hotels SET nom_hotel=?, type_hotel=?, latitude_hotel=?, longitude_hotel=?,
                     pays_hotel=?, ville_hotel=?, quartier_hotel=?, adresse_hotel=?,
@@ -71,19 +161,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         $_SESSION['message'] = "Erreur : " . $e->getMessage();
     }
-   
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
 }
 
-// ==================== LISTE HÔTELS ====================
+/* ================================================================
+   4. LISTE + VILLES
+   ================================================================ */
 $stmt = $pdo->query("SELECT * FROM hotels ORDER BY nom_hotel");
 $hotels = $stmt->fetchAll();
 
-// ==================== MESSAGE FLASH ====================
-$message = $_SESSION['message'] ?? '';
-$alert_type = str_starts_with($message, 'Erreur') ? 'danger' : 'success';
-if ($message) unset($_SESSION['message']);
-
-// ==================== LISTE DES VILLES DE CÔTE D'IVOIRE ====================
 $villes_cote_divoire = [
     "Abidjan", "Yamoussoukro", "Bouaké", "Daloa", "San-Pédro", "Gagnoa", "Korhogo", "Man", "Divo", "Anyama",
     "Abengourou", "Agboville", "Grand-Bassam", "Dabou", "Bouafle", "Sinfra", "Bondoukou", "Ferkessédougou", "Katiola", "Oumé",
@@ -92,6 +179,10 @@ $villes_cote_divoire = [
     "Bonoua", "Arrah", "Jacqueville", "Afféry", "Bangolo", "Béoumi", "Bloléquin", "Botro", "Dimbokro", "Grand-Lahou"
 ];
 sort($villes_cote_divoire);
+
+$message = $_SESSION['message'] ?? '';
+$alert_type = str_starts_with($message, 'Erreur') || str_starts_with($message, 'Impossible') ? 'danger' : 'success';
+if ($message) unset($_SESSION['message']);
 ?>
 
 <!DOCTYPE html>
@@ -132,19 +223,20 @@ sort($villes_cote_divoire);
         <section class="content">
             <div class="container-fluid">
 
-
                 <!-- Boutons Export -->
-                <form method="post" class="d-flex justify-content-end mb-4 gap-2 flex-wrap">
-                    <button type="submit" name="export" value="excel" class="btn btn-success">
-                        <i class="fas fa-file-excel"></i> Excel
-                    </button>&nbsp &nbsp
-                    <button type="submit" name="export" value="csv" class="btn btn-info text-white">
-                        <i class="fas fa-file-csv"></i> CSV
-                    </button>&nbsp &nbsp
-                    <button type="submit" name="export" value="pdf" class="btn btn-danger">
-                        <i class="fas fa-file-pdf"></i> PDF
-                    </button>&nbsp &nbsp
-                </form>
+                <div class="d-flex justify-content-end mb-4 gap-2 flex-wrap">
+                    <form method="post" class="d-flex gap-2">
+                        <button type="submit" name="export" value="excel" class="btn btn-success">
+                            Excel
+                        </button>
+                        <button type="submit" name="export" value="csv" class="btn btn-info text-white">
+                            CSV
+                        </button>
+                        <button type="submit" name="export" value="pdf" class="btn btn-danger">
+                            PDF
+                        </button>
+                    </form>
+                </div>
 
                 <?php if ($message): ?>
                     <div class="alert alert-<?= $alert_type ?> alert-dismissible fade show">
@@ -155,22 +247,15 @@ sort($villes_cote_divoire);
 
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <button class="btn btn-light" id="addBtn">
-                            Ajouter un hôtel
-                        </button>
+                        <h3 class="card-title text-white">Liste des hôtels</h3>
+                        <button class="btn btn-light" id="addBtn">Ajouter un hôtel</button>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-striped table-hover mb-0">
                                 <thead class="table-dark">
                                     <tr>
-                                        <th>Code</th>
-                                        <th>Nom</th>
-                                        <th>Type</th>
-                                        <th>Ville</th>
-                                        <th>Téléphone</th>
-                                        <th>État</th>
-                                        <th class="text-center">Actions</th>
+                                        <th>Code</th><th>Nom</th><th>Type</th><th>Ville</th><th>Téléphone</th><th>État</th><th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -180,36 +265,29 @@ sort($villes_cote_divoire);
                                         <tr>
                                             <td><strong><?= htmlspecialchars($h['code_hotel']) ?></strong></td>
                                             <td><?= htmlspecialchars($h['nom_hotel']) ?></td>
-                                            <td><span class="badge bg-info"><?= ucfirst($h['type_hotel'] ?? 'Standard') ?></span></td>
+                                            <td><span class="badge bg-info"><?= ucfirst($h['type_hotel'] ?? 'standard') ?></span></td>
                                             <td><?= htmlspecialchars($h['ville_hotel']) ?></td>
                                             <td><?= htmlspecialchars($h['telephone_hotel']) ?></td>
-                                            <td>
-                                                <span class="badge bg-<?= $h['etat_hotel'] === 'actif' ? 'success' : 'secondary' ?>">
-                                                    <?= ucfirst($h['etat_hotel']) ?>
-                                                </span>
-                                            </td>
+                                            <td><span class="badge bg-<?= $h['etat_hotel'] === 'actif' ? 'success' : 'secondary' ?>"><?= ucfirst($h['etat_hotel']) ?></span></td>
                                             <td class="text-center">
                                                 <button class="btn btn-warning btn-sm edit-btn"
                                                     data-code="<?= htmlspecialchars($h['code_hotel']) ?>"
                                                     data-nom="<?= htmlspecialchars($h['nom_hotel']) ?>"
-                                                    data-type="<?= htmlspecialchars($h['type_hotel']) ?>"
-                                                    data-lat="<?= htmlspecialchars($h['latitude_hotel']) ?>"
-                                                    data-lng="<?= htmlspecialchars($h['longitude_hotel']) ?>"
-                                                    data-pays="<?= htmlspecialchars($h['pays_hotel']) ?>"
-                                                    data-ville="<?= htmlspecialchars($h['ville_hotel']) ?>"
-                                                    data-quartier="<?= htmlspecialchars($h['quartier_hotel']) ?>"
-                                                    data-adresse="<?= htmlspecialchars($h['adresse_hotel']) ?>"
-                                                    data-tel="<?= htmlspecialchars($h['telephone_hotel']) ?>"
-                                                    data-email="<?= htmlspecialchars($h['email_hotel']) ?>"
-                                                    data-obs="<?= htmlspecialchars($h['observation_hotel']) ?>"
-                                                    data-etat="<?= htmlspecialchars($h['etat_hotel']) ?>">
+                                                    data-type="<?= htmlspecialchars($h['type_hotel'] ?? '') ?>"
+                                                    data-lat="<?= htmlspecialchars($h['latitude_hotel'] ?? '') ?>"
+                                                    data-lng="<?= htmlspecialchars($h['longitude_hotel'] ?? '') ?>"
+                                                    data-pays="<?= htmlspecialchars($h['pays_hotel'] ?? 'Côte d\'Ivoire') ?>"
+                                                    data-ville="<?= htmlspecialchars($h['ville_hotel'] ?? '') ?>"
+                                                    data-quartier="<?= htmlspecialchars($h['quartier_hotel'] ?? '') ?>"
+                                                    data-adresse="<?= htmlspecialchars($h['adresse_hotel'] ?? '') ?>"
+                                                    data-tel="<?= htmlspecialchars($h['telephone_hotel'] ?? '') ?>"
+                                                    data-email="<?= htmlspecialchars($h['email_hotel'] ?? '') ?>"
+                                                    data-obs="<?= htmlspecialchars($h['observation_hotel'] ?? '') ?>"
+                                                    data-etat="<?= htmlspecialchars($h['etat_hotel'] ?? 'inactif') ?>">
                                                     Modifier
                                                 </button>
-                                                <a href="?delete=<?= urlencode($h['code_hotel']) ?>"
-                                                   class="btn btn-danger btn-sm"
-                                                   onclick="return confirm('Supprimer définitivement cet hôtel ?');">
-                                                    Supprimer
-                                                </a>
+                                                <a href="?delete=<?= urlencode($h['code_hotel']) ?>" class="btn btn-danger btn-sm"
+                                                   onclick="return confirm('Supprimer définitivement cet hôtel ?');">Supprimer</a>
                                             </td>
                                         </tr>
                                     <?php endforeach; endif; ?>
@@ -222,7 +300,7 @@ sort($villes_cote_divoire);
         </section>
     </div>
 
-    <!-- ==================== MODAL HÔTEL ==================== -->
+    <!-- Modal Hôtel -->
     <div class="modal fade" id="hotelModal" tabindex="-1">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
@@ -235,30 +313,22 @@ sort($villes_cote_divoire);
                         <input type="hidden" name="action" id="formAction" value="add">
                         <div class="row g-3">
                             <div class="col-md-4">
-                                <label>Code hôtel <span class="text-muted"></span></label>
-                                <input type="text" name="code_hotel" id="code_hotel" class="form-control" readonly >
+                                <label>Code hôtel</label>
+                                <input type="text" name="code_hotel" id="code_hotel" class="form-control" readonly>
                             </div>
                             <div class="col-md-8">
                                 <label>Nom de l'hôtel <span class="text-danger">*</span></label>
                                 <input type="text" name="nom_hotel" id="nom_hotel" class="form-control" required onkeyup="generateCode()">
                             </div>
-                            <div class="col-md-6">
-                                <label>Type / Catégorie</label>
-                                <input type="text" name="type_hotel" id="type_hotel" class="form-control" placeholder="Ex: 4 étoiles, Résidence...">
-                            </div>
-                            <div class="col-md-6">
-                                <label>État</label>
+                            <div class="col-md-6"><label>Type / Catégorie</label><input type="text" name="type_hotel" id="type_hotel" class="form-control"></div>
+                            <div class="col-md-6"><label>État</label>
                                 <select name="etat_hotel" id="etat_hotel" class="form-select">
                                     <option value="actif">Actif</option>
                                     <option value="inactif">Inactif</option>
                                 </select>
                             </div>
-                            <div class="col-md-6">
-                                <label>Pays <span class="text-danger">*</span></label>
-                                <input type="text" name="pays_hotel" id="pays_hotel" class="form-control" value="Côte d'Ivoire" readonly>
-                            </div>
-                            <div class="col-md-6">
-                                <label>Ville <span class="text-danger">*</span></label>
+                            <div class="col-md-6"><label>Pays</label><input type="text" name="pays_hotel" id="pays_hotel" class="form-control" value="Côte d'Ivoire" readonly></div>
+                            <div class="col-md-6"><label>Ville <span class="text-danger">*</span></label>
                                 <select name="ville_hotel" id="ville_hotel" class="form-select" required>
                                     <option value="">-- Choisir une ville --</option>
                                     <?php foreach ($villes_cote_divoire as $ville): ?>
@@ -266,34 +336,13 @@ sort($villes_cote_divoire);
                                     <?php endforeach; ?>
                                 </select>
                             </div>
-                            <div class="col-md-6">
-                                <label>Quartier</label>
-                                <input type="text" name="quartier_hotel" id="quartier_hotel" class="form-control">
-                            </div>
-                            <div class="col-md-6">
-                                <label>Adresse complète</label>
-                                <input type="text" name="adresse_hotel" id="adresse_hotel" class="form-control">
-                            </div>
-                            <div class="col-md-6">
-                                <label>Téléphone <span class="text-danger">*</span></label>
-                                <input type="text" name="telephone_hotel" id="telephone_hotel" class="form-control" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label>Email <span class="text-danger">*</span></label>
-                                <input type="email" name="email_hotel" id="email_hotel" class="form-control" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label>Latitude</label>
-                                <input type="text" name="latitude_hotel" id="latitude_hotel" class="form-control" placeholder="Ex: 5.360000">
-                            </div>
-                            <div class="col-md-6">
-                                <label>Longitude</label>
-                                <input type="text" name="longitude_hotel" id="longitude_hotel" class="form-control" placeholder="Ex: -4.008300">
-                            </div>
-                            <div class="col-12">
-                                <label>Observations / Services</label>
-                                <textarea name="observation_hotel" id="observation_hotel" class="form-control" rows="3"></textarea>
-                            </div>
+                            <div class="col-md-6"><label>Quartier</label><input type="text" name="quartier_hotel" id="quartier_hotel" class="form-control"></div>
+                            <div class="col-md-6"><label>Adresse complète</label><input type="text" name="adresse_hotel" id="adresse_hotel" class="form-control"></div>
+                            <div class="col-md-6"><label>Téléphone <span class="text-danger">*</span></label><input type="text" name="telephone_hotel" id="telephone_hotel" class="form-control" required></div>
+                            <div class="col-md-6"><label>Email <span class="text-danger">*</span></label><input type="email" name="email_hotel" id="email_hotel" class="form-control" required></div>
+                            <div class="col-md-6"><label>Latitude</label><input type="text" name="latitude_hotel" id="latitude_hotel" class="form-control"></div>
+                            <div class="col-md-6"><label>Longitude</label><input type="text" name="longitude_hotel" id="longitude_hotel" class="form-control"></div>
+                            <div class="col-12"><label>Observations</label><textarea name="observation_hotel" id="observation_hotel" class="form-control" rows="3"></textarea></div>
                         </div>
                         <div class="mt-4 text-end">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
@@ -315,10 +364,9 @@ sort($villes_cote_divoire);
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 <script>
-    // Génération automatique du code en temps réel quand on tape le nom
     function generateCode() {
         const nom = document.getElementById('nom_hotel').value.trim();
-        if (nom.length === 0) {
+        if (!nom) {
             document.getElementById('code_hotel').value = '';
             return;
         }
@@ -334,8 +382,8 @@ sort($villes_cote_divoire);
         document.getElementById('formAction').value = 'add';
         document.getElementById('code_hotel').readOnly = true;
         document.getElementById('code_hotel').value = '';
-        document.getElementById('pays_hotel').value = 'Côte d\'Ivoire';
-        generateCode(); // pré-remplir au cas où
+        document.getElementById('pays_hotel').value = "Côte d'Ivoire";
+        generateCode();
         modal.show();
     });
 

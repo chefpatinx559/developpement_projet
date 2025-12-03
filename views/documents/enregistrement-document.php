@@ -167,9 +167,6 @@ if ($message) unset($_SESSION['message']);
                         <div class="col-md-3">
                             <button type="submit" class="btn btn-primary w-100">Filtrer</button>
                         </div>
-                        <div class="col-md-3">
-                            <a href="crud_documents.php" class="btn btn-secondary w-100">Réinitialiser</a>
-                        </div>
                     </form>
                 </div>
 
