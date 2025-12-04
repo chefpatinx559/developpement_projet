@@ -111,7 +111,14 @@ class Utilisateur
 public function inscription()
 {
 include"views/utilisateurs/inscription-utilisateur.php";
- }   
+ }  
+
+
+
+ public function profil()
+{
+include"views/utilisateurs/profil.php";
+ }  
 
 
  public function deconnexion()

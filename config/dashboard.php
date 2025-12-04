@@ -66,9 +66,10 @@ function activeClass($path, $class = 'active') {
 
                 <li class="user-body bg-white" style="border-radius: 0 0 16px 16px;">
                     <div class="p-3">
-                        <a href="#" class="d-block text-decoration-none py-3 px-3 rounded hover-bg-light text-dark">
-                            <i class="fas fa-user-circle text-primary me-3"></i> Mon Profil
-                        </a>
+                        <a href="#" class="d-block text-decoration-none py-3 px-3 rounded hover-bg-light text-dark" 
+   data-bs-toggle="modal" data-bs-target="#profilModal">
+    <i class="fas fa-user-circle text-primary me-3"></i> Mon Profil
+</a>
                         <a href="#" class="d-block text-decoration-none py-3 px-3 rounded hover-bg-light text-dark">
                             <i class="fas fa-cog text-muted me-3"></i> Paramètres
                         </a>
@@ -290,6 +291,11 @@ function activeClass($path, $class = 'active') {
                         <li class="nav-item">
                             <a href="<?= old_url('/hotel/enregistrement') ?>" class="nav-link <?= activeClass('/hotel/enregistrement') ?>">
                                 <i class="far fa-circle nav-icon"></i><p>Enregistrement Hôtels</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="<?= old_url('/hotel/liste') ?>" class="nav-link <?= activeClass('/hotel/liste') ?>">
+                                <i class="far fa-circle nav-icon"></i><p>Liste Hôtels</p>
                             </a>
                         </li>
                     </ul>
