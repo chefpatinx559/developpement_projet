@@ -17,6 +17,8 @@ if (isset($_GET['delete'])) {
         $_SESSION['message'] = "Erreur : " . $e->getMessage();
         $_SESSION['alert_type'] = "danger";
     }
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
 }
 
 // ==================== EXPORT ====================

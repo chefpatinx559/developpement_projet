@@ -1,16 +1,17 @@
 <?php
 // views/utilisateurs/connexion.php
-//session_start(); // OBLIGATOIRE, décommenté !
+// session_start(); // DÉCOMMENTÉ !
 
-require "database/database.php"; // Ajuste le chemin si besoin
+require "database/database.php";
 
 $error = "";
+$message="";
+
+if (isset($_GET['message'])) {
+    $message=$_GET['message'];
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $login = trim($_POST['login'] ?? '');
-    $mdp   = $_POST['mdp'] ?? ''; // pas de trim sur le mdp ! 
-
-    // Correction du bug ici
     $login = trim($_POST['login'] ?? '');
     $mdp   = $_POST['mdp'] ?? '';
 
@@ -18,17 +19,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = "Tous les champs sont obligatoires.";
     } else {
         try {
-            // ON RETIRE mdp=? de la requête SQL ! On cherche seulement par login + état
             $stmt = $pdo->prepare("SELECT * FROM utilisateurs WHERE login = ? AND etat = 'actif' ");
             $stmt->execute([$login]);
             $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            // On vérifie le mot de passe avec password_verify UNIQUEMENT ici
-            if ($user && password_verify($mdp, $user['mdp'])) {
-
-               // session_start(); // mets-le en haut du fichier, pas ici !
+            // COMPARAISON DIRECTE sans password_verify
+            if ($user && $mdp === $user['mdp']) {
                 session_regenerate_id(true);
 
+                // Décommente cette ligne
                 $_SESSION['utilisateur_id'] = $user['utilisateur_id'];
                 $_SESSION['nom_prenom']     = $user['nom_prenom'];
                 $_SESSION['login']          = $user['login'];
@@ -36,7 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['photo']          = $user['photo'];
                 $_SESSION['type_photo']     = $user['type_photo'];
 
-                // Ta redirection habituelle
                 $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
                 $host = $_SERVER['HTTP_HOST'];
                 $dir = dirname($_SERVER['PHP_SELF']);
@@ -47,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     document.location.replace("<?= $redirect_url ?>");
                 </script>
                 <?php
-                //exit();
+                exit();
 
             } else {
                 $error = "Login ou mot de passe incorrect.";
@@ -126,6 +124,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php if (!empty($error)): ?>
                 <div class="alert alert-danger alert-dismissible fade show">
                     <?= htmlspecialchars($error) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            <?php endif; ?>
+
+                        <?php if (!empty($message)): ?>
+                <div class="alert alert-success alert-dismissible fade show">
+                    <?= htmlspecialchars($message) ?>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>

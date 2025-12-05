@@ -3,6 +3,19 @@ session_start(); // OBLIGATOIRE !
 
 require "database/database.php";
 
+// ==================== VÉRIFICATION DE L'UTILISATEUR CONNECTÉ ====================
+$user_connected = false;
+$user_name = "Mon Compte";
+$user_photo = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop&crop=face";
+
+// Vérifier si l'utilisateur est connecté via la session
+if (isset($_SESSION['user_id'])) {
+    $user_connected = true;
+    // Récupérer les infos utilisateur depuis la session
+    $user_name = $_SESSION['user_name'] ?? "Mon Compte";
+    $user_photo = $_SESSION['user_photo'] ?? "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop&crop=face";
+}
+
 // ==================== FONCTIONS BDD POUR LES CHAMBRES (REAL DATA) ====================
 /**
  * Récupère TOUTES les chambres ACTIVES ET DISPONIBLES pour un hôtel donné
@@ -295,10 +308,164 @@ else {
     <style>
         :root{--orange:#ff6b35;--bleu:#0a2647;--gris:#f8f9fa;}
         *{margin:0;padding:0;box-sizing:border-box;}
-        h1, h2, h3, h4 { word-wrap: break-word; } /* Correction pour les titres trop longs sur mobile */
+        h1, h2, h3, h4 { word-wrap: break-word; }
         body{font-family:'Inter',sans-serif;background:var(--gris);color:#222;overflow-x:hidden;}
+        
+        /* Header avec menu déroulant */
         .header{position:fixed;top:0;left:0;right:0;height:90px;background:rgba(10,38,71,0.95);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:space-between;padding:0 5%;z-index:1000;box-shadow:0 10px 30px rgba(0,0,0,0.2);}
-        .logo-header{font-family:'Playfair Display',serif;font-size:42px;color:white;font-weight:900;letter-spacing:4px;}
+        .logo-header{font-family:'Playfair Display',serif;font-size:42px;color:white;font-weight:900;letter-spacing:4px;text-decoration:none;}
+        
+        /* Menu déroulant du profil */
+        .user-menu-container {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .user-profile-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: transparent;
+            border: 2px solid white;
+            border-radius: 50px;
+            padding: 8px 20px;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .user-profile-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--orange);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid white;
+        }
+        
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 10px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            min-width: 250px;
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .dropdown-menu.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .dropdown-header {
+            padding: 20px;
+            background: var(--bleu);
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .dropdown-header .user-avatar {
+            width: 50px;
+            height: 50px;
+            border: none;
+        }
+        
+        .user-info h4 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .user-info p {
+            margin: 5px 0 0;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .dropdown-links {
+            padding: 15px 0;
+        }
+        
+        .dropdown-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px 20px;
+            color: #333;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .dropdown-link:hover {
+            background: #f5f5f5;
+            color: var(--orange);
+        }
+        
+        .dropdown-link i {
+            width: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background: #eee;
+            margin: 10px 0;
+        }
+        
+        .dropdown-footer {
+            padding: 15px 20px;
+            background: #f9f9f9;
+            border-top: 1px solid #eee;
+        }
+        
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            color: #d63031;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: #ffebee;
+            border-color: #d63031;
+        }
+        
+        /* Animation de la flèche */
+        .arrow {
+            transition: transform 0.3s ease;
+        }
+        
+        .user-profile-btn.active .arrow {
+            transform: rotate(180deg);
+        }
+        
+        /* Reste des styles existants */
         .hero{background:linear-gradient(rgba(10,38,71,0.45),rgba(10,38,71,0.60)),url('<?=$bg?>') center no-repeat fixed;background-size: cover; min-height:100vh;display:flex;align-items:center;justify-content:center;padding-top:90px;position:relative;}
         .logo{font-family:'Playfair Display',serif;font-size:140px;color:white;text-shadow:0 20px 40px rgba(0,0,0,0.6);animation:float 6s infinite;}
         @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-20px);}}
@@ -489,42 +656,27 @@ else {
         .social-links a:hover{background:var(--orange);transform:translateY(-5px);}
         .copyright{text-align:center;padding-top:60px;border-top:1px solid rgba(255,255,255,0.1);margin-top:60px;font-size:15px;color:#aaa;}
         
-        /* ======================================================= */
-        /* ====== ADAPTATION (RESPONSIVE) - ÉCRANS MOYENS (TABLETTES) ====== */
-        /* ======================================================= */
-        @media (max-width: 1200px) {
-            .gallery {
-                padding: 0 3%;
-                gap: 15px;
-            }
-            .main-photo {
-                height: 500px; /* Réduire la hauteur de la grande image */
-            }
-            .side-photos div {
-                height: 110px; /* Réduire la hauteur des vignettes */
-            }
-            .hotel-body {
-                padding: 0 3%;
-                grid-template-columns: 1fr 380px; /* Réduire la taille de la colonne de réservation */
-                gap: 40px;
-            }
-            .chambre-detail-content {
-                margin-top: 110px;
-            }
-            .chambre-card-info h4 {
-                font-size: 20px;
-            }
-            .chambre-card-price {
-                font-size: 16px;
-                padding: 8px 14px;
-            }
-        }
-
-        /* ======================================================= */
-        /* ====== ADAPTATION (RESPONSIVE) - ÉCRANS MOBILES (< 768px) ====== */
-        /* ======================================================= */
+        /* Responsive pour le menu déroulant */
         @media (max-width: 768px) {
-            /* En-tête */
+            .user-profile-btn span {
+                display: none;
+            }
+            
+            .user-profile-btn {
+                padding: 8px;
+            }
+            
+            .dropdown-menu {
+                position: fixed;
+                top: 70px;
+                left: 0;
+                right: 0;
+                margin: 0;
+                border-radius: 0 0 16px 16px;
+                min-width: auto;
+            }
+            
+            /* Responsive existant */
             .header {
                 height: 70px;
                 padding: 0 4%;
@@ -532,12 +684,6 @@ else {
             .logo-header {
                 font-size: 32px;
             }
-            .header a { /* Connexion/Inscription */
-                padding: 8px 18px !important;
-                font-size: 14px !important;
-            }
-
-            /* Hero / Recherche */
             .hero {
                 min-height: 80vh;
             }
@@ -558,18 +704,14 @@ else {
                 height: 60px;
                 font-size: 22px;
             }
-
-            /* Grilles et Cartes */
             .grid, .chambre-list {
-                grid-template-columns: 1fr; /* Une seule colonne sur mobile */
+                grid-template-columns: 1fr;
                 gap: 30px;
                 padding: 0 4%; 
             }
             .offer-card:hover, .card:hover {
                 transform: none; 
             }
-
-            /* Détail Hôtel et Chambre */
             .back-btn {
                 top: 85px;
                 left: 20px;
@@ -577,8 +719,6 @@ else {
                 height: 50px;
                 font-size: 24px;
             }
-
-            /* GALERIE : Passage à une colonne */
             .gallery {
                 grid-template-columns: 1fr; 
                 padding: 0 4%;
@@ -587,13 +727,11 @@ else {
                 height: 300px; 
             }
             .side-photos {
-                grid-template-columns: repeat(2, 1fr); /* Les vignettes passent sur deux colonnes en dessous */
+                grid-template-columns: repeat(2, 1fr);
             }
             .side-photos div {
                 height: 100px;
             }
-            
-            /* Corps de l'Hôtel/Chambre */
             .hotel-body, .chambre-detail-content {
                 grid-template-columns: 1fr; 
                 padding: 0 4%;
@@ -601,14 +739,12 @@ else {
                 gap: 30px;
             }
             .booking-box {
-                position: static; /* Enlever le sticky sur mobile */
+                position: static;
                 margin-top: 30px; 
             }
             .price {
                 font-size: 42px;
             }
-
-            /* Footer */
             footer {
                 padding: 60px 5% 30px;
                 margin-top: 80px;
@@ -618,6 +754,36 @@ else {
                 margin-bottom: 20px;
             }
         }
+        
+        /* Adaptation écrans moyens */
+        @media (max-width: 1200px) {
+            .gallery {
+                padding: 0 3%;
+                gap: 15px;
+            }
+            .main-photo {
+                height: 500px;
+            }
+            .side-photos div {
+                height: 110px;
+            }
+            .hotel-body {
+                padding: 0 3%;
+                grid-template-columns: 1fr 380px;
+                gap: 40px;
+            }
+            .chambre-detail-content {
+                margin-top: 110px;
+            }
+            .chambre-card-info h4 {
+                font-size: 20px;
+            }
+            .chambre-card-price {
+                font-size: 16px;
+                padding: 8px 14px;
+            }
+        }
+
         /* FIX RESPONSIVE PAGE DÉTAIL CHAMBRE */
 .chambre-body-responsive {
     grid-template-columns: 1fr !important;
@@ -658,10 +824,77 @@ else {
 <body>
 
 <div class="header">
-    <a href="." class="logo-header" style="text-decoration:none;">soutra</a>
-    <div style="display:flex;gap:18px;">
-        <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/utilisateur/connexion" style="padding:12px 32px;border:2px solid white;border-radius:50px;color:white;text-decoration:none;font-weight:600;transition:0.3s;">Connexion</a>
-        <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/utilisateur/inscription" style="padding:12px 32px;background:var(--orange);color:white;border-radius:50px;text-decoration:none;font-weight:600;transition:0.3s;">Inscription</a>
+    <a href="." class="logo-header">soutra</a>
+    <div style="display:flex;align-items:center;gap:20px;">
+        <?php if ($user_connected): ?>
+            <div class="user-menu-container">
+                <button class="user-profile-btn" onclick="toggleDropdown()">
+                    <img src="<?= $user_photo ?>" alt="Photo de profil" class="user-avatar">
+                    <span><?= htmlspecialchars($user_name) ?></span>
+                    <i class="fas fa-chevron-down arrow" style="font-size:14px;"></i>
+                </button>
+                
+                <div class="dropdown-menu" id="userDropdown">
+                    <div class="dropdown-header">
+                        <img src="<?= $user_photo ?>" alt="Photo de profil" class="user-avatar">
+                        <div class="user-info">
+                            <h4><?= htmlspecialchars($user_name) ?></h4>
+                            <p>Membre depuis 2024</p>
+                        </div>
+                    </div>
+                    
+                    <div class="dropdown-links">
+                        <a href="profil.php" class="dropdown-link">
+                            <i class="fas fa-user-circle"></i>
+                            <span>Mon profil</span>
+                        </a>
+                        
+                        <a href="mes-annonces.php" class="dropdown-link">
+                            <i class="fas fa-list-alt"></i>
+                            <span>Mes annonces</span>
+                        </a>
+                        
+                        <a href="mes-reservations.php" class="dropdown-link">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>Mes réservations</span>
+                        </a>
+                        
+                        <a href="messages.php" class="dropdown-link">
+                            <i class="fas fa-envelope"></i>
+                            <span>Messages</span>
+                            <span style="margin-left:auto;background:#ff4757;color:white;padding:2px 8px;border-radius:10px;font-size:12px;">3</span>
+                        </a>
+                        
+                        <a href="favoris.php" class="dropdown-link">
+                            <i class="fas fa-heart"></i>
+                            <span>Favoris</span>
+                        </a>
+                        
+                        <div class="dropdown-divider"></div>
+                        
+                        <a href="parametres.php" class="dropdown-link">
+                            <i class="fas fa-cog"></i>
+                            <span>Paramètres</span>
+                        </a>
+                        
+                        <a href="aide.php" class="dropdown-link">
+                            <i class="fas fa-question-circle"></i>
+                            <span>Aide & Support</span>
+                        </a>
+                    </div>
+                    
+                    <div class="dropdown-footer">
+                        <button class="logout-btn" onclick="window.location.href='deconnexion.php'">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Déconnexion</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        <?php else: ?>
+            <a href="connexion.php" style="padding:12px 32px;border:2px solid white;border-radius:50px;color:white;text-decoration:none;font-weight:600;transition:0.3s;">Connexion</a>
+            <a href="inscription.php" style="padding:12px 32px;background:var(--orange);color:white;border-radius:50px;text-decoration:none;font-weight:600;transition:0.3s;">Inscription</a>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -681,13 +914,13 @@ else {
             <div class="main-photo" style="height:500px;background-image:url('<?=$chambrePhotos[0]?>')"></div>
         </div>
 
-               <div class="hotel-body chambre-body-responsive">
+        <div class="hotel-body chambre-body-responsive">
             <div>
                 <h2 style="font-size:32px;margin-bottom:20px;">Détails de la Chambre</h2>
                 <p style="font-size:18px;line-height:1.8;color:#444;margin-bottom:30px;">
                     <?=nl2br(htmlspecialchars($chambre['description_chambre']))?>
                 </p>
-                            </div>
+            </div>
 
             <div class="booking-box">
                 <div class="price"><?=number_format($chambre['prix_chambre'])?> FCFA <small style="font-size:19px;color:#666;"></small></div>
@@ -717,7 +950,6 @@ else {
         </div>
     </div>
 
-
 <?php elseif (isset($hotel)): // Page de détail d'un hôtel avec galerie corrigée et responsive ?>
     <div style="padding-top: 90px;"></div>
     <a href="." class="back-btn"><i class="fas fa-arrow-left"></i></a>
@@ -738,14 +970,12 @@ else {
                 <i class="fas fa-map-marker-alt" style="color:var(--orange);"></i>
                 <?=htmlspecialchars($hotel['quartier_hotel'].', '.$hotel['ville_hotel'])?>
             </p>
-          
-
             <h2 style="font-family:'Playfair Display',serif;font-size:42px;color:var(--bleu);margin-top:60px;border-bottom:3px solid var(--orange);display:inline-block;padding-bottom:10px;">Chambres disponibles</h2>
 
             <div class="chambre-list">
                 <?php 
                 if (empty($chambres)): ?>
-                    <p style="font-size:20px;color:#666;padding:50px 0;">Aucun type de chambre n'est disponible pour cet hôtel.</p>
+                    <p style="font-size:20px;color:#666;padding:50px 0;">Aucune chambre n'est disponible pour cet hôtel.</p>
                 <?php else: ?>
                     <?php foreach ($chambres as $c): $chambreImg = $hotelPhotos[array_rand($hotelPhotos)]; ?>
                         <div class="chambre-card">
@@ -756,18 +986,17 @@ else {
                                 <h4><?=htmlspecialchars($c['type_chambre'])?></h4>
                                 <div class="chambre-card-stars">
                                     <?php for($i=0; $i<5; $i++): ?>
-            
+                                       
                                     <?php endfor; ?>
                                 </div>
                                 
-                                
+                             
                                 <p class="chambre-card-description">
                                     <?=substr(htmlspecialchars($c['description_chambre']), 0, 80)?>...
                                 </p>
                                 
                                 <div class="chambre-card-button-group">
                                     <a href="?code_chambre=<?=htmlspecialchars($c['code_chambre'])?>" class="btn-view-detail">VOIR DÉTAIL</a>
-
                                 </div>
                             </div>
                         </div>
@@ -824,17 +1053,16 @@ else {
             <?php foreach($offres as $h): $img = $hotelPhotos[array_rand($hotelPhotos)]; ?>
                 <div class="offer-card" onclick="location.href='?hotel=<?=htmlspecialchars($h['code_hotel'])?>'">
                     <div class="offer-img" style="background-image:url('<?=$img?>')">
-                        <div class="heart"><i class="far fa-heart"></i></div>
+
                     </div>
                     <div class="offer-info">
                         <h3><?=htmlspecialchars($h['nom_hotel'])?></h3>
                         <p style="color:#666;"><?=htmlspecialchars($h['ville_hotel'])?></p>
-
                     </div>
                 </div>
             <?php endforeach; ?>
         </div>
-        </div>
+    </div>
 <?php endif; ?>
 <footer>
     <div class="footer-grid">
@@ -858,6 +1086,15 @@ else {
             </ul>
         </div>
         <div class="footer-col">
+            <h3>Support</h3>
+            <ul>
+                <li><a href="#">Centre d'aide</a></li>
+                <li><a href="#">Nous contacter</a></li>
+                <li><a href="#">FAQ</a></li>
+                <li><a href="#">Annulation</a></li>
+            </ul>
+        </div>
+        <div class="footer-col">
             <h3>Contact</h3>
             <ul>
                 <li><a href="#">+225 07 87 43 71 19</a></li>
@@ -871,5 +1108,33 @@ else {
         © 2025 soutra. Tous droits réservés. Créé avec ❤️ en Côte d'Ivoire
     </div>
 </footer>
+
+<script>
+    // Gestion du menu déroulant
+    function toggleDropdown() {
+        const dropdown = document.getElementById('userDropdown');
+        const button = document.querySelector('.user-profile-btn');
+        
+        dropdown.classList.toggle('active');
+        button.classList.toggle('active');
+    }
+    
+    // Fermer le menu déroulant quand on clique ailleurs
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('userDropdown');
+        const button = document.querySelector('.user-profile-btn');
+        const isClickInside = dropdown.contains(event.target) || button.contains(event.target);
+        
+        if (!isClickInside && dropdown.classList.contains('active')) {
+            dropdown.classList.remove('active');
+            button.classList.remove('active');
+        }
+    });
+    
+    // Empêcher la fermeture quand on clique dans le menu
+    document.getElementById('userDropdown').addEventListener('click', function(event) {
+        event.stopPropagation();
+    });
+</script>
 </body>
 </html>

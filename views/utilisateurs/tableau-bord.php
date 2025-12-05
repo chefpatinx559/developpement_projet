@@ -9,20 +9,19 @@ if (!isset($_SESSION['utilisateur_id'])) {
     exit;
 }
 
+// ==================== FONCTION PHOTO UTILISATEUR (centralisée) ====================
+// function userPhoto() {
+//     if (!empty($_SESSION['photo']) && !empty($_SESSION['type_photo'])) {
+//         return 'data:' . $_SESSION['type_photo'] . ';base64,' . base64_encode($_SESSION['photo']);
+//     }
+//     return 'assets/images/user.png'; // Ta belle icône par défaut
+// }
+
 // ==================== VARIABLES DASHBOARD ====================
 $user_name = $_SESSION['nom_prenom'] ?? "Utilisateur Anonyme";
 $user_role = $_SESSION['role'] ?? "Réception";
 
-// Photo utilisateur sécurisée
-if (!empty($_SESSION['photo']) && !empty($_SESSION['type_photo'])) {
-    $user_photo = 'data:' . $_SESSION['type_photo'] . ';base64,' . base64_encode($_SESSION['photo']);
-} else {
-    $initials = mb_substr($user_name, 0, 2);
-    $user_photo = "https://via.placeholder.com/160x160/6c757d/ffffff?text=" . urlencode($initials);
-}
-
-// ==================== TOUTES TES REQUÊTES SQL (inchangées) ====================
-// (Tout ton code PHP pour les KPI, graphiques, etc. reste IDENTIQUE)
+// ==================== REQUÊTES SQL (inchangées) ====================
 $stmt = $pdo->query("
     SELECT
         COUNT(*) AS total_chambres,
@@ -44,7 +43,8 @@ $total_clients = $pdo->query("SELECT COUNT(*) FROM clients")->fetchColumn();
 $stmt = $pdo->query("SELECT type_chambre, COUNT(*) AS total, SUM(CASE WHEN r.statut_reservation = 'occupé' AND r.etat_reservation IN ('actif','en cours') THEN 1 ELSE 0 END) AS occupe FROM chambres c LEFT JOIN reservations r ON c.code_chambre = r.code_chambre GROUP BY type_chambre ");
 $occupation_data = $stmt->fetchAll();
 
-$revenus_labels = []; $revenus_values = [];
+$revenus_labels = []; 
+$revenus_values = [];
 $months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
 for ($i = 5; $i >= 0; $i--) {
     $date = new DateTime("first day of -$i month");
@@ -58,7 +58,9 @@ for ($i = 5; $i >= 0; $i--) {
 
 $stmt = $pdo->query("SELECT statut_reservation, COUNT(*) AS count FROM reservations WHERE etat_reservation IN ('actif', 'en cours') GROUP BY statut_reservation ");
 $statuts = ['libre' => 0, 'occupé' => 0, 'réservé' => 0];
-foreach ($stmt as $row) { $statuts[$row['statut_reservation']] = (int)$row['count']; }
+foreach ($stmt as $row) { 
+    $statuts[$row['statut_reservation']] = (int)$row['count']; 
+}
 
 $stmt = $pdo->query("SELECT nationalite_client, COUNT(*) AS count FROM clients GROUP BY nationalite_client ORDER BY count DESC LIMIT 5 ");
 $nationalites = $stmt->fetchAll();
@@ -75,14 +77,12 @@ $reservations_recentes = $stmt->fetchAll();
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Animation pour le message de succès -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .small-box { border-radius: 0.75rem; }
         .small-box .icon { font-size: 2.5rem; opacity: 0.3; }
         .chart-container { height: 300px; }
-        .user-photo { width: 40px; height: 40px; object-fit: cover; border-radius: 50%; }
         .badge { font-size: 0.85em; }
     </style>
 </head>
@@ -107,42 +107,39 @@ $reservations_recentes = $stmt->fetchAll();
 
         <section class="content">
             <div class="container-fluid">
-                <!-- Tes KPI, graphiques, tableau... tout reste identique -->
-                <!-- (Je garde ton code HTML complet) -->
-
                 <!-- KPI Cards -->
                 <div class="row">
                     <div class="col-lg-3 col-6">
                         <div class="small-box bg-info">
                             <div class="inner"><h3><?= $chambres_occupees ?></h3><p>Chambres Occupées</p></div>
                             <div class="icon"><i class="fas fa-bed"></i></div>
-                            <a href="                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/chambre/liste" class="small-box-footer">sur <?= $total_chambres ?> totales <i class="fas fa-arrow-circle-right"></i></a>
+                            <a href="#" class="small-box-footer">sur <?= $total_chambres ?> totales <i class="fas fa-arrow-circle-right"></i></a>
                         </div>
                     </div>
                     <div class="col-lg-3 col-6">
                         <div class="small-box bg-success">
                             <div class="inner"><h3><?= number_format($revenu_mois, 0, ',', ' ') ?></h3><p>Revenus du Mois</p></div>
                             <div class="icon"><i class="fas fa-euro-sign"></i></div>
-                            <a href="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/transaction/transaction_facture" class="small-box-footer">FCFA <i class="fas fa-arrow-circle-right"></i></a>
+                            <a href="#" class="small-box-footer">FCFA <i class="fas fa-arrow-circle-right"></i></a>
                         </div>
                     </div>
                     <div class="col-lg-3 col-6">
                         <div class="small-box bg-warning">
                             <div class="inner"><h3><?= $reservations_actives ?></h3><p>Réservations Actives</p></div>
                             <div class="icon"><i class="fas fa-calendar-check"></i></div>
-                            <a href="="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/reservation/reservation_par_hotel" class="small-box-footer">En cours <i class="fas fa-arrow-circle-right"></i></a>
+                            <a href="#" class="small-box-footer">En cours <i class="fas fa-arrow-circle-right"></i></a>
                         </div>
                     </div>
                     <div class="col-lg-3 col-6">
                         <div class="small-box bg-danger">
                             <div class="inner"><h3><?= $total_clients ?></h3><p>Clients Total</p></div>
                             <div class="icon"><i class="fas fa-users"></i></div>
-                            <a href="="<?php if(substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])),-1) =="/"){ echo (substr(((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"])), 0,-1)); }else{ echo ((isset($_SERVER["HTTPS"]) ? 'https://' : 'http://').$_SERVER['HTTP_HOST'].dirname($_SERVER["PHP_SELF"]));} ?>/clients/enregistrement" class="small-box-footer">Inscrits <i class="fas fa-arrow-circle-right"></i></a>
+                            <a href="#" class="small-box-footer">Inscrits <i class="fas fa-arrow-circle-right"></i></a>
                         </div>
                     </div>
                 </div>
 
-                <!-- Graphiques + Tableau (tout ton code original) -->
+                <!-- Graphiques -->
                 <div class="row">
                     <div class="col-lg-6">
                         <div class="card">
@@ -157,6 +154,7 @@ $reservations_recentes = $stmt->fetchAll();
                         </div>
                     </div>
                 </div>
+
                 <div class="row">
                     <div class="col-lg-6">
                         <div class="card">
@@ -220,40 +218,39 @@ $reservations_recentes = $stmt->fetchAll();
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 
-<!-- Tes graphiques Chart.js (inchangés) -->
 <script>
-// === DONNÉES PHP → JS ===
+// Graphiques Chart.js
 const occupationData = <?= json_encode(array_map(fn($row) => ['type' => $row['type_chambre'], 'taux' => $row['total'] > 0 ? round($row['occupe'] / $row['total'] * 100, 1) : 0 ], $occupation_data)) ?>;
 const revenusData = <?= json_encode($revenus_values) ?>;
 const moisLabels = <?= json_encode($revenus_labels) ?>;
 const statutsData = <?= json_encode([$statuts['libre'], $statuts['occupé'], $statuts['réservé']]) ?>;
 const nationalitesData = <?= json_encode(['labels' => array_column($nationalites, 'nationalite_client'), 'values' => array_column($nationalites, 'count') ]) ?>;
 
-const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
-
-new Chart(document.getElementById('occupancyChart'), { type: 'doughnut', data: { labels: occupationData.map(d => d.type), datasets: [{ data: occupationData.map(d => d.taux), backgroundColor: colors }] }, options: { responsive: true, plugins: { legend: { position: 'bottom' } } } });
-new Chart(document.getElementById('revenueChart'), { type: 'line', data: { labels: moisLabels, datasets: [{ label: 'Revenus TTC (FCFA)', data: revenusData, borderColor: '#28a745', backgroundColor: 'rgba(40, 167, 69, 0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true } });
-new Chart(document.getElementById('statusChart'), { type: 'pie', data: { labels: ['Libre', 'Occupé', 'Réservé'], datasets: [{ data: statutsData, backgroundColor: ['#17a2b8', '#dc3545', '#ffc107'] }] }, options: { responsive: true } });
+new Chart(document.getElementById('occupancyChart'), { type: 'doughnut', data: { labels: occupationData.map(d => d.type), datasets: [{ data: occupationData.map(d => d.taux), backgroundColor: ['#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF'] }] }, options: { responsive: true, plugins: { legend: { position: 'bottom' } } } });
+new Chart(document.getElementById('revenueChart'), { type: 'line', data: { labels: moisLabels, datasets: [{ label: 'Revenus TTC (FCFA)', data: revenusData, borderColor: '#28a745', backgroundColor: 'rgba(40,167,69,0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true } });
+new Chart(document.getElementById('statusChart'), { type: 'pie', data: { labels: ['Libre','Occupé','Réservé'], datasets: [{ data: statutsData, backgroundColor: ['#17a2b8','#dc3545','#ffc107'] }] }, options: { responsive: true } });
 new Chart(document.getElementById('nationalityChart'), { type: 'bar', data: { labels: nationalitesData.labels, datasets: [{ label: 'Clients', data: nationalitesData.values, backgroundColor: '#6f42c1' }] }, options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } } } });
 </script>
 
-<!-- MODALE PROFIL (inchangée) -->
+<!-- MODALE PROFIL -->
 <div class="modal fade" id="profilModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content shadow-lg">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i> Mon Profil</h5>
+                <h5 class="modal-title">Mon Profil</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="profil" method="POST" enctype="multipart/form-data">
                 <div class="modal-body">
                     <div class="text-center mb-4">
                         <div class="position-relative d-inline-block">
-                            <img src="<?= !empty($_SESSION['photo']) ? 'data:' . $_SESSION['type_photo'] . ';base64,' . base64_encode($_SESSION['photo']) : $user_photo ?>"
+                            <img src="<?= userPhoto() ?>"
                                  id="photoPreview" class="rounded-circle shadow-lg border border-4 border-white"
                                  style="width: 130px; height: 130px; object-fit: cover;" alt="Photo de profil">
                             <label for="photo" class="btn btn-success rounded-circle position-absolute bottom-0 end-0 d-flex align-items-center justify-content-center"
-                                   style="width: 44px; height: 44px; cursor: pointer;"><i class="fas fa-camera"></i></label>
+                                   style="width: 44px; height: 44px; cursor: pointer;">
+                                <i class="fas fa-camera"></i>
+                            </label>
                             <input type="file" name="photo" id="photo" accept="image/*" class="d-none" onchange="previewImage(this)">
                         </div>
                         <h5 class="mt-3 mb-1 fw-bold"><?= htmlspecialchars($_SESSION['nom_prenom'] ?? '') ?></h5>
@@ -268,12 +265,12 @@ new Chart(document.getElementById('nationalityChart'), { type: 'bar', data: { la
                         ?>
                         <div class="col-md-6"><label class="form-label fw-semibold">Prénom</label><input type="text" name="prenom" class="form-control" value="<?= htmlspecialchars($prenom) ?>" required></div>
                         <div class="col-md-6"><label class="form-label fw-semibold">Nom</label><input type="text" name="nom" class="form-control" value="<?= htmlspecialchars($nom) ?>" required></div>
-                        <div class="col-md-6"><label class="form-label fw-semibold">Email</label><input type="email" name="email" class="form-control" value="<?= htmlspecialchars($_SESSION['email'] ?? '') ?>" required></div>
+                        
                         <div class="col-md-6"><label class="form-label fw-semibold">Téléphone</label><input type="tel" name="telephone" class="form-control" value="<?= htmlspecialchars($_SESSION['telephone'] ?? '') ?>"></div>
                     </div>
                     <hr class="my-4">
                     <a href="javascript:void(0)" onclick="document.getElementById('pwdSection').classList.toggle('d-none')" class="text-primary fw-medium">
-                        <i class="fas fa-key me-2"></i> Changer le mot de passe
+                        Changer le mot de passe
                     </a>
                     <div id="pwdSection" class="d-none mt-3">
                         <div class="row g-3">
@@ -285,16 +282,16 @@ new Chart(document.getElementById('nationalityChart'), { type: 'bar', data: { la
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i> Enregistrer</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- MESSAGE DE SUCCÈS MAGNIFIQUE (nouveau !) -->
+<!-- Messages -->
 <?php if (isset($_SESSION['success'])): ?>
-<div class="position-fixed top-50 start-50 translate-middle" style="z-index: 9999;">
+<div class="position-fixed top-50 start-50 translate-middle" style="z-index:9999;">
     <div class="card border-0 shadow-lg animate__animated animate__zoomIn animate__faster">
         <div class="card-body bg-success text-white text-center py-5 px-5 rounded-4">
             <i class="fas fa-check-circle fa-4x mb-3 animate__animated animate__bounce"></i>
@@ -305,11 +302,9 @@ new Chart(document.getElementById('nationalityChart'), { type: 'bar', data: { la
 </div>
 <?php unset($_SESSION['success']); endif; ?>
 
-<!-- Message d'erreur (classique en haut à droite) -->
 <?php if (isset($_SESSION['error'])): ?>
-<div class="position-fixed top-0 end-0 p-4" style="z-index: 9999;">
+<div class="position-fixed top-0 end-0 p-4" style="z-index:9999;">
     <div class="alert alert-danger alert-dismissible fade show shadow-lg border-0">
-        <i class="fas fa-exclamation-triangle fa-lg me-2"></i>
         <strong>Erreur :</strong> <?= htmlspecialchars($_SESSION['error']) ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
@@ -324,8 +319,6 @@ function previewImage(input) {
         reader.readAsDataURL(input.files[0]);
     }
 }
-
-// Auto-fermeture du message de succès après 3 secondes
 setTimeout(() => {
     const successCard = document.querySelector('.card.border-0.shadow-lg');
     if (successCard) {
@@ -336,10 +329,8 @@ setTimeout(() => {
 }, 3000);
 </script>
 
-<!-- Auto-refresh toutes les 2 minutes (optionnel) -->
 <script>
 setTimeout(() => location.reload(), 120000);
 </script>
-
 </body>
 </html>
