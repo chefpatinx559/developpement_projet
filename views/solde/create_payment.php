@@ -22,7 +22,7 @@ if (!empty($_POST['phone'])) {
 }
 
 $url = "https://api.wave.com/v1/checkout/sessions";
-$token = "wave_ci_prod_VUL28uJjZT0S3RXB5Ya0jXtWtzl9Rbk58YfVduX59n3MwJkppBqCkuPR8mQYoa5Ba5PY9Ql357U4T8i3OSbBmamjYBPPYtV2Aw";
+$token = "YOUR-API-KEY";
 $base_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://') . $_SERVER['HTTP_HOST'] . '/utilisateur/';
 
 $payload = [
