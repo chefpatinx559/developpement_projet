@@ -3,7 +3,7 @@ if(isset($_POST['btn_envoyer']))
 {
 
 # Specify your API KEY
-$api_key = "wave_ci_prod_VUL28uJjZT0S3RXB5Ya0jXtWtzl9Rbk58YfVduX59n3MwJkppBqCkuPR8mQYoa5Ba5PY9Ql357U4T8i3OSbBmamjYBPPYtV2Aw";
+$api_key = "YOUR-API-KEY";
 
 $checkout_params = [
     "amount" => $_POST['sai_montant'],
